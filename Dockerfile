@@ -1,0 +1,21 @@
+FROM node:20-slim
+
+LABEL org.opencontainers.image.authors="Elias Shekh"
+
+WORKDIR /app
+
+COPY .npmrc .npmrc
+
+COPY package.json .
+
+RUN npm i -g pnpm
+
+RUN pnpm i
+
+COPY . .
+
+RUN pnpm run build
+
+CMD ["sh", "-c", "node build/server"]
+
+EXPOSE 8000

@@ -1,0 +1,4 @@
+schema: './src/graphql/typeDefs/*.graphql'
+extensions:
+  languageService:
+    cacheSchemaFileForLookup: true

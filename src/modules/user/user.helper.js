@@ -1,0 +1,79 @@
+import { find, map } from 'lodash'
+import { Op } from 'sequelize'
+
+// Entities
+import { UserEntity } from 'src/modules/entities'
+
+// Helpers
+import { commonHelper } from 'src/modules/helpers'
+
+// Utils
+import { sequelize } from 'src/utils/database'
+
+export const countUsers = async (options) => UserEntity.count(options)
+
+export const getAUser = async (options, transaction) => UserEntity.findOne({ ...options, transaction })
+
+export const getUsers = async (options, transaction) => UserEntity.findAll({ ...options, transaction })
+
+export const prepareGetUsersQuery = (params) => {
+  const { email, search_keyword, status } = params || {}
+
+  const query = {}
+  if (email) query.email = email?.toLowerCase?.()
+  if (search_keyword) {
+    query[Op.or] = [
+      { email: { [Op.iLike]: '%' + search_keyword + '%' } },
+      sequelize.where(sequelize.literal("CONCAT(first_name, ' ', last_name)"), Op.iLike, '%' + search_keyword + '%')
+    ]
+  }
+  if (status) query.status = status
+
+  return query
+}
+
+export const getAUserForQuery = async (query) => {
+  commonHelper.checkRequiredFields(['entity_id'], query)
+
+  return getAUser({ attributes: ['id', 'email', 'first_name', 'last_name', 'status'], where: { id: query.entity_id } })
+}
+
+export const getUsersForQuery = async (params) => {
+  const { options, query } = params || {}
+  const { limit, offset, order } = options || {}
+
+  const where = prepareGetUsersQuery(query)
+  const data = await getUsers({
+    attributes: ['id', 'email', 'first_name', 'last_name', 'status'],
+    limit,
+    offset,
+    order,
+    where
+  })
+  const filtered_rows = await countUsers({ where: preparedQuery })
+  const total_rows = await countUsers()
+
+  return { data, meta_data: { filtered_rows, total_rows } }
+}
+
+export const getAuthUserWithRolesAndPermissions = async ({ roles, user_id }) => {
+  if (!commonHelper.validateUUID(user_id)) {
+    throw new Error('INVALID_USER_ID')
+  }
+
+  const user = await getAUser({
+    attributes: ['id', 'email', 'first_name', 'last_name', 'status'],
+    include: [
+      { association: 'roles', include: [{ association: 'permissions' }], where: { name: { [Op.in]: roles || [] } } }
+    ],
+    where: { id: user_id }
+  })
+  if (!user?.id) {
+    throw new Error('USER_DOES_NOT_EXIST')
+  }
+
+  user.role = commonHelper.getTopRoleOfAUser(map(user?.roles, 'name') || [])
+  user.permissions = find(user?.roles, (role) => role?.name === user.role)?.permissions || []
+
+  return user
+}

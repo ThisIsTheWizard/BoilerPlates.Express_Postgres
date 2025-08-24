@@ -1,0 +1,7 @@
+export * as authTemplateService from 'src/modules/auth-template/auth-template.service'
+export * as authTokenService from 'src/modules/auth-token/auth-token.service'
+export * as permissionService from 'src/modules/permission/permission.service'
+export * as rolePermissionService from 'src/modules/role-permission/role-permission.service'
+export * as roleUserService from 'src/modules/role-user/role-user.service'
+export * as roleService from 'src/modules/role/role.service'
+export * as userService from 'src/modules/user/user.service'

@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "graphql.vscode-graphql",
+    "graphql.vscode-graphql-syntax",
+    "streetsidesoftware.code-spell-checker"
+  ]
+}
