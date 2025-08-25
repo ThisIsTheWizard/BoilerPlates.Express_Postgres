@@ -1,38 +1,5 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { size } from 'lodash'
-
-export const getRandomNumber = (length) => {
-  const characters = '0123456789'
-
-  let result = ''
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * characters.length)
-    result += characters.charAt(randomIndex)
-  }
-
-  return result
-}
-
-export const getRandomString = (length) => {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-
-  let result = ''
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * characters.length)
-    result += characters.charAt(randomIndex)
-  }
-
-  return result
-}
-
-export const checkPasswordPolicy = (password) => {
-  if (size(password) < 8) return false
-
-  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[-+_!@#$%^&*.,?]).+$/
-
-  return regex.test(password)
-}
 
 export const compareHashPassword = (str = '', hashStr) => {
   if (!str || !hashStr) return false
@@ -78,26 +45,4 @@ export const verifyJWTToken = (token) => {
       success: false
     }
   }
-}
-
-export const getAppName = () => process.env.COPILOT_APPLICATION_NAME || 'gain'
-
-export const getAppDomain = () => {
-  const domainMaps = {
-    gain: 'gain.io',
-    payrun: 'payrun.app',
-    easydesk: 'easydesk.app'
-  }
-  return domainMaps[getAppName()]
-}
-
-export const getAppURL = () => `https://${getAppDomain()}`
-
-export const getImgixPublicURL = () => {
-  const cdnMaps = {
-    gain: 'gain-dev-public',
-    payrun: 'payrun-public',
-    easydesk: 'easydesk-prod-public'
-  }
-  return `https://${cdnMaps[getAppName()]}.imgix.net`
 }
