@@ -1,6 +1,9 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
+// Helpers
+import { commonHelper } from 'src/modules/helpers'
+
 export const compareHashPassword = (str = '', hashStr) => {
   if (!str || !hashStr) return false
 
@@ -22,10 +25,10 @@ export const generateHashPassword = (str = '') => bcrypt.hashSync(str, 10)
 export const generateJWTToken = (payload = {}, expiresIn = '1h') =>
   jwt.sign(
     {
-      iss: getAppDomain(),
-      sub: payload?.sub || getRandomString(17),
-      aud: payload?.aud || getRandomString(17),
-      jti: payload?.jti || getRandomString(17),
+      iss: process.env.JWT_ISSUER,
+      sub: payload?.sub || commonHelper.getRandomString(17),
+      aud: payload?.aud || commonHelper.getRandomString(17),
+      jti: payload?.jti || commonHelper.getRandomString(17),
       ...payload
     },
     process.env.JWT_SECRET,
