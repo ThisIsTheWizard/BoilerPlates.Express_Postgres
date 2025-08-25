@@ -2,7 +2,10 @@
 import { AuthTokenEntity } from 'src/modules/entities'
 
 // Helpers
-import { authTokenHelper } from 'src/modules/helpers'
+import { authTokenHelper, commonHelper, userHelper } from 'src/modules/helpers'
+
+// Services
+import { commonService } from 'src/modules/services'
 
 // Utils
 import { CustomError } from 'src/utils/error'
@@ -32,19 +35,18 @@ export const deleteAnAuthToken = async (options, transaction) => {
   return authToken
 }
 
-export const createAuthTokensForUser = async (sequelize, user, transaction) => {
-  const { id: user_id, org_brand_id, org_id, roles } = user || {}
+export const deleteAuthTokens = async (options, transaction) => AuthTokenEntity.destroy({ ...options, transaction })
+
+export const createAuthTokensForUser = async (user, transaction) => {
+  const { roles, user_id } = user || {}
 
   const accessTokenExpiry = process.env.ACCESS_TOKEN_EXPIRY || '1d'
   const refreshTokenExpiry = process.env.REFRESH_TOKEN_EXPIRY || '30d'
 
-  const access_token = generateJWTToken(
-    { org_brand_id, org_id, roles, sub: user?.app_user_id, user_id },
-    accessTokenExpiry
-  )
-  const refresh_token = generateJWTToken({ sub: user?.app_user_id, user_id }, refreshTokenExpiry)
+  const access_token = commonService.generateJWTToken({ roles, sub: user_id, user_id }, accessTokenExpiry)
+  const refresh_token = commonService.generateJWTToken({ sub: user_id, user_id }, refreshTokenExpiry)
 
-  const authToken = await createAnAuthToken(sequelize, { access_token, refresh_token, user_id }, transaction)
+  const authToken = await createAnAuthToken({ access_token, refresh_token, user_id }, null, transaction)
   if (!authToken?.id) {
     throw new Error('COULD_NOT_CREATE_AUTH_TOKEN')
   }
@@ -52,8 +54,8 @@ export const createAuthTokensForUser = async (sequelize, user, transaction) => {
   return { access_token, refresh_token }
 }
 
-export const verifyAnAuthTokenForUser = async (sequelize, params = {}) => {
-  validateProps(
+export const verifyAnAuthTokenForUser = async (params = {}) => {
+  commonHelper.validateProps(
     [
       { field: 'token', required: true, type: 'string' },
       { field: 'type', required: true, type: 'string' }
@@ -66,40 +68,32 @@ export const verifyAnAuthTokenForUser = async (sequelize, params = {}) => {
     throw new Error('TOKEN_TYPE_IS_INVALID')
   }
 
-  const { user_id } = decodeJWTToken(token) || {}
-  const authToken = await readAnAuthToken(sequelize, {
+  const { user_id } = commonService.decodeJWTToken(token) || {}
+  const authToken = await authTokenHelper.getAnAuthToken({
     where: { [type]: token, user_id }
   })
   if (!authToken?.id) {
     return { message: 'INVALID_TOKEN', success: false }
   }
 
-  return verifyJWTToken(token) || {}
+  return commonService.verifyJWTToken(token) || {}
 }
 
-export const refreshAuthTokensForUser = async (sequelize, params = {}, transaction) => {
-  validateProps(
+export const refreshAuthTokensForUser = async (params = {}, transaction) => {
+  commonHelper.validateProps(
     [
-      { field: 'custom_claims', required: true, type: 'object' },
-      { field: 'refresh_token', required: true, type: 'string' }
-    ],
-    params
-  )
-  validateProps(
-    [
-      { field: 'org_brand_id', required: false, type: 'string' },
-      { field: 'org_id', required: false, type: 'string' },
+      { field: 'refresh_token', required: true, type: 'string' },
       { field: 'roles', required: true, type: 'object' },
       { field: 'user_id', required: true, type: 'string' }
     ],
-    params?.custom_claims || {}
+    params
   )
 
-  const { custom_claims, refresh_token } = params || {}
+  const { refresh_token, roles, user_id } = params || {}
 
-  const { user_id } = decodeJWTToken(refresh_token) || {}
-  const authToken = await readAnAuthToken(
-    sequelize,
+  commonService.verifyJWTToken(refresh_token)
+
+  const authToken = await authTokenHelper.getAnAuthToken(
     { include: [{ association: 'user' }], where: { refresh_token, user_id } },
     transaction
   )
@@ -109,7 +103,7 @@ export const refreshAuthTokensForUser = async (sequelize, params = {}, transacti
 
   const { user } = authToken || {}
   if (!user?.id) {
-    throw new Error('USER_IS_NOT_FOUND')
+    throw new Error('USER_DOES_NOT_EXIST')
   }
   if (!(user?.status === 'active')) {
     throw new Error('USER_IS_NOT_ACTIVE')
@@ -117,11 +111,11 @@ export const refreshAuthTokensForUser = async (sequelize, params = {}, transacti
 
   await authToken.destroy({ transaction })
 
-  return createAuthTokensForUser(sequelize, { ...user?.dataValues, ...custom_claims }, transaction)
+  return createAuthTokensForUser({ roles, user_id }, transaction)
 }
 
-export const revokeAnAuthTokenForUser = async (sequelize, params = {}, transaction) => {
-  validateProps(
+export const revokeAnAuthTokenForUser = async (params = {}, transaction) => {
+  commonHelper.validateProps(
     [
       { field: 'token', required: true, type: 'string' },
       { field: 'type', required: true, type: 'string' }
@@ -134,19 +128,19 @@ export const revokeAnAuthTokenForUser = async (sequelize, params = {}, transacti
     throw new Error('TOKEN_TYPE_IS_INVALID')
   }
 
-  const deletedCount = await deleteAuthTokensForUser(sequelize, { where: { [type]: token } }, transaction)
-  if (deletedCount <= 0) {
+  const authToken = await deleteAnAuthToken({ where: { [type]: token } }, transaction)
+  if (!authToken?.id) {
     return { message: 'INVALID_TOKEN', success: false }
   }
 
   return { message: 'LOGGED_OUT', success: true }
 }
 
-export const revokeAuthTokensForUser = async (sequelize, params = {}, transaction) => {
-  validateProps([{ field: 'user_id', required: true, type: 'string' }], params)
+export const revokeAuthTokensForUser = async (params = {}, transaction) => {
+  commonHelper.validateProps([{ field: 'user_id', required: true, type: 'string' }], params)
 
   const { user_id } = params || {}
-  const user = await getAUser(sequelize, { where: { id: user_id } }, transaction)
+  const user = await userHelper.getAUser({ where: { id: user_id } }, transaction)
   if (!user?.id) {
     throw new Error('USER_IS_NOT_FOUND')
   }
@@ -154,7 +148,7 @@ export const revokeAuthTokensForUser = async (sequelize, params = {}, transactio
     throw new Error('USER_IS_NOT_ACTIVE')
   }
 
-  const deletedCount = await deleteAuthTokensForUser(sequelize, { where: { user_id } }, transaction)
+  const deletedCount = await deleteAuthTokens({ where: { user_id } }, transaction)
   if (deletedCount <= 0) {
     return { message: 'INVALID_TOKEN', success: false }
   }

@@ -27,7 +27,7 @@ export const validateTokenAndGetAuthUser = async (token = '') => {
   })
 }
 
-export const authorizer = (requiredRoles = []) => {
+export const authorizer = (requiredRoles = ['admin', 'developer', 'moderator', 'user']) => {
   const callback = async (req, res, next) => {
     try {
       const token = req.headers?.authorization || ''

@@ -2,12 +2,10 @@ import { SendRawEmailCommand, SESClient } from '@aws-sdk/client-ses'
 import Handlebars from 'handlebars'
 import MailComposer from 'nodemailer/lib/mail-composer'
 
-import { getImgixPublicURL } from '../common/common.service'
+// Helpers
+import { authTemplateHelper } from 'src/modules/helpers'
 
 Handlebars.registerHelper('current_year', () => new Date().getFullYear())
-
-const readAnAuthTemplate = async (sequelize, options, transaction) =>
-  sequelize?.models?.auth_template?.findOne?.({ ...options, transaction })
 
 const sendEmailBySES = async (params) => {
   try {
@@ -31,9 +29,7 @@ const sendEmailBySES = async (params) => {
       },
       region: process.env.AWS_REGION
     })
-    const command = new SendRawEmailCommand({
-      RawMessage: { Data: rawContent }
-    })
+    const command = new SendRawEmailCommand({ RawMessage: { Data: rawContent } })
     const response = await sesClient.send(command)
 
     return response
@@ -42,26 +38,22 @@ const sendEmailBySES = async (params) => {
   }
 }
 
-export const sendNotification = async (sequelize, params = {}) => {
+export const sendNotification = async (params = {}) => {
   const { event, from_email, to_email, variables = {} } = params || {}
   if (!(event && to_email)) {
     throw new Error('MISSING_REQUIRED_FIELDS_TO_SEND_NOTIFICATION')
   }
 
-  const template = await readAnAuthTemplate(sequelize, { where: { event } })
+  const template = await authTemplateHelper.getAnAuthTemplate({ where: { event } })
   if (!template?.id) {
     throw new Error('AUTH_TEMPLATE_IS_NOT_FOUND')
   }
   if (!template?.body || !template?.subject) {
     throw new Error('MISSING_AUTH_TEMPLATE_BODY_OR_SUBJECT')
   }
-  variables.template_header_image_url =
-    getImgixPublicURL() + '/assets/template/template_header_' + process.env.COPILOT_ENVIRONMENT_NAME + '.png'
 
-  const body = Handlebars.compile(template.body)
-  const subject = Handlebars.compile(
-    `${process.env.COPILOT_ENVIRONMENT_NAME !== 'prod' ? `[${process.env.COPILOT_ENVIRONMENT_NAME.toUpperCase()}] ` : ''}${template?.subject}`
-  )
+  const body = Handlebars.compile(template?.body)
+  const subject = Handlebars.compile(template?.subject)
 
   return sendEmailBySES({
     from_email,

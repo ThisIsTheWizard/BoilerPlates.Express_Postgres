@@ -1,11 +1,11 @@
-import { find, map } from 'lodash'
+import { find, join, map, size } from 'lodash'
 import { Op } from 'sequelize'
 
 // Entities
 import { UserEntity } from 'src/modules/entities'
 
 // Helpers
-import { commonHelper } from 'src/modules/helpers'
+import { commonHelper, roleHelper } from 'src/modules/helpers'
 
 // Utils
 import { sequelize } from 'src/utils/database'
@@ -50,8 +50,8 @@ export const getUsersForQuery = async (params) => {
     order,
     where
   })
-  const filtered_rows = await countUsers({ where: preparedQuery })
-  const total_rows = await countUsers()
+  const filtered_rows = await countUsers({ where })
+  const total_rows = await countUsers({})
 
   return { data, meta_data: { filtered_rows, total_rows } }
 }
@@ -72,8 +72,24 @@ export const getAuthUserWithRolesAndPermissions = async ({ roles, user_id }) => 
     throw new Error('USER_DOES_NOT_EXIST')
   }
 
-  user.role = commonHelper.getTopRoleOfAUser(map(user?.roles, 'name') || [])
+  user.roles = map(user?.roles, 'name')
+  user.role = roleHelper.getTopRoleOfAUser(user.roles || [])
   user.permissions = find(user?.roles, (role) => role?.name === user.role)?.permissions || []
+  user.user_id = user.id
 
-  return user
+  return JSON.parse(JSON.stringify(user))
+}
+
+export const getUsernameByNames = (email, first_name, last_name) => {
+  const strings = []
+
+  if (first_name) strings.push(first_name)
+  if (last_name) strings.push(last_name)
+
+  // If names are empty, use email as username
+  if (email && !size(strings)) {
+    strings.push(email)
+  }
+
+  return join(strings, ' ')
 }

@@ -1,11 +1,15 @@
-import { omit, size } from 'lodash'
+import { omit, size, slice } from 'lodash'
+import moment from 'moment-timezone'
+import { Op } from 'sequelize'
 
 // Entities
 import { UserEntity } from 'src/modules/entities'
 
 // Helpers
+import { commonHelper, userHelper, verificationTokenHelper } from 'src/modules/helpers'
 
 // Services
+import { authTokenService, commonService, verificationTokenService } from 'src/modules/services'
 
 // Utils
 import { CustomError } from 'src/utils/error'
@@ -34,8 +38,8 @@ export const deleteAUser = async (options, transaction) => {
   return user
 }
 
-export const registerPassword = async (sequelize, params = {}, transaction) => {
-  validateProps(
+export const registerPassword = async (params = {}, transaction) => {
+  commonService.validateProps(
     [
       { field: 'is_verification_required', required: true, type: 'boolean' },
       { field: 'password', required: true, type: 'string' },
@@ -44,38 +48,28 @@ export const registerPassword = async (sequelize, params = {}, transaction) => {
     params
   )
 
-  const { is_verification_required = true, password, user_id } = params || {}
-  if (is_verification_required && !checkPasswordPolicy(password)) {
+  const { password, user_id } = params || {}
+  if (!commonHelper.validatePassword(password)) {
     throw new Error('PASSWORD_DID_NOT_CONFORM_OUR_POLICY')
   }
 
-  const user = await getAUser(sequelize, { where: { id: user_id } }, transaction)
+  const user = await userHelper.getAUser({ where: { id: user_id } }, transaction)
   if (!user?.id) {
-    throw new Error('USER_DOES_NOT_EXISTS')
+    throw new Error('USER_DOES_NOT_EXIST')
   }
 
-  const hashPassword = generateHashPassword(password)
+  await user.update({ password: commonService.generateHashPassword(password), status: 'unverified' }, { transaction })
 
-  const updatingData = { password: hashPassword }
-  if (is_verification_required) {
-    updatingData.status = 'unverified'
-  }
-
-  await user.update(updatingData, { transaction })
-
-  if (is_verification_required) {
-    await createAVerificationTokenAndSendNotification(
-      sequelize,
-      { ...user?.dataValues, type: 'user_verification', user_id },
-      transaction
-    )
-  }
+  await verificationTokenService.createAVerificationTokenForUser(
+    { ...user?.dataValues, type: 'user_verification', user_id },
+    transaction
+  )
 
   return omit(user?.dataValues, ['old_passwords', 'password'])
 }
 
-export const verifyUserEmail = async (sequelize, params = {}, transaction) => {
-  validateProps(
+export const verifyUserEmail = async (params = {}, transaction) => {
+  commonHelper.validateProps(
     [
       { field: 'token', required: true, type: 'string' },
       { field: 'user_id', required: true, type: 'string' }
@@ -84,34 +78,15 @@ export const verifyUserEmail = async (sequelize, params = {}, transaction) => {
   )
 
   const { token, user_id } = params || {}
-  const verificationToken = await readAVerificationToken(
-    sequelize,
-    {
-      where: {
-        status: 'unverified',
-        type: { [Op.in]: ['resend_user_verification', 'user_verification'] },
-        token,
-        user_id
-      }
-    },
-    transaction
-  )
-  if (!verificationToken?.id) {
-    throw new Error('OTP_IS_NOT_VALID')
-  }
-  if (moment(verificationToken?.expired_at).isBefore(moment())) {
-    throw new Error('OTP_IS_EXPIRED')
-  }
 
-  await deleteVerificationTokens(
-    sequelize,
-    { where: { type: { [Op.in]: ['resend_user_verification', 'user_verification'] }, user_id } },
+  await verificationTokenService.validateVerificationTokenForUser(
+    { token, type: 'user_verification', user_id },
     transaction
   )
 
-  const user = await getAUser(sequelize, { where: { id: user_id } }, transaction)
+  const user = await userHelper.getAUser({ where: { id: user_id } }, transaction)
   if (!user?.id) {
-    throw new Error('USER_IS_NOT_FOUND')
+    throw new Error('USER_DOES_NOT_EXIST')
   }
 
   await user.update({ status: 'active' }, { transaction })
@@ -119,26 +94,25 @@ export const verifyUserEmail = async (sequelize, params = {}, transaction) => {
   return omit(user?.dataValues, ['old_passwords', 'password'])
 }
 
-export const resendUserVerificationEmail = async (sequelize, params = {}, transaction) => {
-  validateProps([{ field: 'email', required: true, type: 'string' }], params)
+export const resendUserVerificationEmail = async (params = {}, transaction) => {
+  commonHelper.validateProps([{ field: 'email', required: true, type: 'string' }], params)
 
   const { email } = params || {}
-  const user = await getAUser(sequelize, { where: { [Op.or]: [{ email }, { new_email: email }] } }, transaction)
+  const user = await userHelper.getAUser({ where: { [Op.or]: [{ email }, { new_email: email }] } }, transaction)
   if (!user?.id) {
-    throw new Error('USER_IS_NOT_FOUND')
+    throw new Error('USER_DOES_NOT_EXIST')
   }
   if (!(user?.status === 'unverified') && !user?.new_email) {
     throw new Error('USER_IS_ALREADY_VERIFIED')
   }
 
-  const existingTokens = await readVerificationTokens(
-    sequelize,
+  const existingTokens = await verificationTokenHelper.getVerificationTokens(
     {
       order: [['created_at', 'desc']],
       where: {
         created_at: { [Op.gte]: moment().subtract(10, 'minutes').toDate() },
         status: { [Op.in]: ['cancelled', 'unverified'] },
-        type: 'resend_user_verification',
+        type: 'user_verification',
         user_id: user?.id
       }
     },
@@ -148,129 +122,66 @@ export const resendUserVerificationEmail = async (sequelize, params = {}, transa
     throw new Error('TOO_MANY_RESEND_VERIFICATION_REQUESTS')
   }
 
-  await updateVerificationTokens(
-    sequelize,
-    {
-      data: { status: 'cancelled' },
-      options: {
-        where: {
-          status: 'unverified',
-          type: { [Op.in]: ['resend_user_verification', 'user_verification'] },
-          user_id: user?.id
-        }
-      }
-    },
+  await verificationTokenService.updateVerificationTokens(
+    { where: { status: 'unverified', type: 'user_verification', user_id: user?.id } },
+    { status: 'cancelled' },
     transaction
   )
 
-  await createAVerificationTokenAndSendNotification(
-    sequelize,
-    { ...user?.dataValues, email, type: 'resend_user_verification', user_id: user?.id },
+  await verificationTokenService.createAVerificationTokenForUser(
+    { ...user?.dataValues, email, type: 'user_verification', user_id: user?.id },
     transaction
   )
 
   return omit(user?.dataValues, ['old_passwords', 'password'])
 }
 
-export const loginAUser = async (sequelize, params = {}, transaction) => {
-  validateProps(
+export const loginUser = async (params = {}, transaction) => {
+  commonHelper.validateProps(
     [
-      { field: 'custom_claims', required: true, type: 'object' },
+      { field: 'roles', required: true, type: 'object' },
       { field: 'password', required: true, type: 'string' },
       { field: 'user_id', required: true, type: 'string' }
     ],
     params
   )
-  validateProps(
-    [
-      { field: 'org_brand_id', required: false, type: 'string' },
-      { field: 'org_id', required: false, type: 'string' },
-      { field: 'roles', required: false, type: 'object' }
-    ],
-    params?.custom_claims || {}
-  )
 
-  const { custom_claims, password, user_id } = params || {}
-  const user = await getAUser(sequelize, { where: { id: user_id } }, transaction)
+  const { password, roles, user_id } = params || {}
+  const user = await userHelper.getAUser({ where: { id: user_id } }, transaction)
   if (!user?.id) {
-    throw new Error('USER_IS_NOT_FOUND')
+    throw new Error('USER_DOES_NOT_EXIST')
   }
   if (!(user?.status === 'active')) {
     throw new Error(`USER_IS_${user?.status?.toUpperCase?.()}`)
   }
-  if (!compareHashPassword(password, user?.password)) {
+  if (!commonService.compareHashPassword(password, user?.password)) {
     throw new Error('PASSWORD_IS_INCORRECT')
   }
-  if (user?.has_temp_password) {
-    return { message: 'NEW_PASSWORD_REQUIRED', success: true }
-  }
 
-  return createAuthTokensForUser(sequelize, { ...user?.dataValues, ...custom_claims }, transaction)
+  return authTokenService.createAuthTokensForUser({ roles, user_id: user?.id }, transaction)
 }
 
-export const loginAnApplication = async (sequelize, params = {}, transaction) => {
-  validateProps(
-    [
-      { field: 'app_name', required: true, type: 'string' },
-      { field: 'org_brand_id', required: false, type: 'string' },
-      { field: 'org_id', required: false, type: 'string' },
-      { field: 'token', required: true, type: 'string' }
-    ],
-    params
-  )
-  if (!(params?.token === process.env.APPLICATION_TOKEN)) {
-    throw new Error('INVALID_APPLICATION_TOKEN')
-  }
+export const logoutAUser = async (params, transaction) => authTokenService.revokeAnAuthTokenForUser(params, transaction)
 
-  const { app_name = 'public' } = params || {}
-  if (!['organization', 'public', 'service'].includes(app_name)) {
-    throw new Error('APP_NAME_IS_INVALID')
-  }
-  if (app_name === 'organization' && !params?.org_id) {
-    throw new Error('MISSING_ORG_ID')
-  }
+export const logoutAUserByAdmin = async (params, transaction) =>
+  authTokenService.revokeAuthTokensForUser(params, transaction)
 
-  const userAndRolesMappingObj = {
-    organization: { roles: ['public'], user_id: 'ORGANIZATION_APPLICATION' },
-    public: { roles: ['public'], user_id: 'PUBLIC_APPLICATION' },
-    service: { roles: ['service_manager'], user_id: 'SERVICE_APPLICATION' }
-  }
-  const appUser = await getAUser(
-    sequelize,
-    { where: { email: userAndRolesMappingObj[app_name]?.user_id } },
-    transaction
-  )
-  if (!appUser?.id) {
-    throw new Error('APPLICATION_IS_NOT_FOUND')
-  }
+export const verifyTokenForUser = async (params, transaction) =>
+  authTokenService.verifyAnAuthTokenForUser(params, transaction)
 
-  return createAuthTokensForUser(
-    sequelize,
-    {
-      ...appUser?.dataValues,
-      app_user_id: userAndRolesMappingObj[app_name]?.user_id,
-      org_brand_id: params?.org_brand_id,
-      org_id: params?.org_id,
-      roles: userAndRolesMappingObj[app_name]?.roles
-    },
-    transaction
-  )
+export const refreshTokensForUser = async (params = {}, transaction) => {
+  commonHelper.validateProps([{ field: 'refresh_token', required: true, type: 'string' }], params)
+
+  const { refresh_token } = params || {}
+  const { roles, user_id } = commonService.decodeJWTToken(refresh_token) || {}
+
+  const user = await userHelper.getAuthUserWithRolesAndPermissions({ roles, user_id })
+
+  return authTokenService.refreshAuthTokensForUser({ refresh_token, roles: user?.roles, user_id }, transaction)
 }
 
-export const logoutAUser = async (sequelize, params = {}, transaction) =>
-  revokeAnAuthTokenForUser(sequelize, params, transaction)
-
-export const logoutAUserByAdmin = async (sequelize, params = {}, transaction) =>
-  revokeAuthTokensForUser(sequelize, params, transaction)
-
-export const verifyTokenForUser = async (sequelize, params = {}, transaction) =>
-  verifyAnAuthTokenForUser(sequelize, params, transaction)
-
-export const refreshTokensForUser = async (sequelize, params = {}, transaction) =>
-  refreshAuthTokensForUser(sequelize, params, transaction)
-
-export const changeEmailByUser = async (sequelize, params = {}, transaction) => {
-  validateProps(
+export const changeEmailByUser = async (params = {}, transaction) => {
+  commonHelper.validateProps(
     [
       { field: 'email', required: true, type: 'string' },
       { field: 'new_email', required: true, type: 'string' }
@@ -280,12 +191,11 @@ export const changeEmailByUser = async (sequelize, params = {}, transaction) => 
 
   const { email, new_email } = params || {}
 
-  if (!validator.isEmail(new_email)) {
-    throw new Error('INVALID_NEW_EMAIL')
+  if (!commonHelper.validateEmail(new_email)) {
+    throw new Error('EMAIL_IS_INVALID')
   }
 
-  const existingUser = await getAUser(
-    sequelize,
+  const existingUser = await userHelper.getAUser(
     { where: { [Op.or]: [{ email: new_email }, { new_email }] } },
     transaction
   )
@@ -293,34 +203,29 @@ export const changeEmailByUser = async (sequelize, params = {}, transaction) => 
     throw new Error('NEW_EMAIL_IS_ALREADY_ASSOCIATED_WITH_A_USER')
   }
 
-  const user = await getAUser(sequelize, { where: { email } }, transaction)
+  const user = await userHelper.getAUser({ where: { email } }, transaction)
   if (!user?.id) {
-    throw new Error('USER_IS_NOT_FOUND')
+    throw new Error('USER_DOES_NOT_EXIST')
   }
   if (!(user?.status === 'active')) {
     throw new Error(`USER_IS_${user?.status?.toUpperCase?.()}`)
   }
-  if (user?.has_temp_password) {
-    return { message: 'NEW_PASSWORD_REQUIRED', success: false }
-  }
 
   await user.update({ new_email }, { transaction })
 
-  await deleteVerificationTokens(
-    sequelize,
+  await verificationTokenService.deleteVerificationTokens(
     {
       where: {
         email: new_email,
         status: 'unverified',
-        type: { [Op.in]: ['resend_user_verification', 'user_verification'] },
+        type: 'user_verification',
         user_id: user?.id
       }
     },
     transaction
   )
 
-  await createAVerificationTokenAndSendNotification(
-    sequelize,
+  await verificationTokenService.createAVerificationTokenForUser(
     { ...user?.dataValues, email: new_email, type: 'user_verification', user_id: user?.id },
     transaction
   )
@@ -328,31 +233,27 @@ export const changeEmailByUser = async (sequelize, params = {}, transaction) => 
   return omit(user?.dataValues, ['old_passwords', 'password'])
 }
 
-export const cancelChangeEmailByUser = async (sequelize, params = {}, transaction) => {
-  validateProps([{ field: 'email', required: true, type: 'string' }], params)
+export const cancelChangeEmailByUser = async (params, transaction) => {
+  commonHelper.validateProps([{ field: 'email', required: true, type: 'string' }], params)
 
   const { email } = params || {}
 
-  const user = await getAUser(sequelize, { where: { new_email: email } }, transaction)
+  const user = await userHelper.getAUser({ where: { new_email: email } }, transaction)
   if (!user?.id) {
-    throw new Error('USER_IS_NOT_FOUND')
+    throw new Error('USER_DOES_NOT_EXIST')
   }
   if (!(user?.status === 'active')) {
     throw new Error(`USER_IS_${user?.status?.toUpperCase?.()}`)
   }
-  if (user?.has_temp_password) {
-    return { message: 'NEW_PASSWORD_REQUIRED', success: false }
-  }
 
   await user.update({ new_email: null }, { transaction })
 
-  const deletedTokens = await deleteVerificationTokens(
-    sequelize,
+  const deletedTokens = await verificationTokenService.deleteVerificationTokens(
     {
       where: {
         email,
         status: 'unverified',
-        type: { [Op.in]: ['resend_user_verification', 'user_verification'] },
+        type: 'user_verification',
         user_id: user?.id
       }
     },
@@ -365,8 +266,8 @@ export const cancelChangeEmailByUser = async (sequelize, params = {}, transactio
   return omit(user?.dataValues, ['old_passwords', 'password'])
 }
 
-export const verifyChangeEmailByUser = async (sequelize, params = {}, transaction) => {
-  validateProps(
+export const verifyChangeEmailByUser = async (params = {}, transaction) => {
+  commonHelper.validateProps(
     [
       { field: 'token', required: true, type: 'string' },
       { field: 'user_id', required: true, type: 'string' }
@@ -375,36 +276,18 @@ export const verifyChangeEmailByUser = async (sequelize, params = {}, transactio
   )
 
   const { token, user_id } = params || {}
-  const verificationToken = await readAVerificationToken(
-    sequelize,
-    {
-      where: {
-        status: 'unverified',
-        type: { [Op.in]: ['resend_user_verification', 'user_verification'] },
-        token,
-        user_id
-      }
-    },
+
+  await verificationTokenService.validateVerificationTokenForUser(
+    { token, type: 'user_verification', user_id },
     transaction
   )
-  if (!verificationToken?.id) {
-    throw new Error('OTP_IS_NOT_VALID')
-  }
-  if (moment(verificationToken?.expired_at).isBefore(moment())) {
-    throw new Error('OTP_IS_EXPIRED')
-  }
 
-  await verificationToken.destroy({ transaction })
-
-  const user = await getAUser(sequelize, { where: { id: user_id } }, transaction)
+  const user = await userHelper.getAUser({ where: { id: user_id } }, transaction)
   if (!user?.id) {
-    throw new Error('USER_IS_NOT_FOUND')
+    throw new Error('USER_DOES_NOT_EXIST')
   }
   if (!(user?.status === 'active')) {
     throw new Error(`USER_IS_${user?.status?.toUpperCase?.()}`)
-  }
-  if (user?.has_temp_password) {
-    return { message: 'NEW_PASSWORD_REQUIRED', success: false }
   }
 
   await user.update({ email: user?.new_email, new_email: null }, { transaction })
@@ -412,8 +295,8 @@ export const verifyChangeEmailByUser = async (sequelize, params = {}, transactio
   return omit(user?.dataValues, ['old_passwords', 'password'])
 }
 
-export const changeEmailByAdmin = async (sequelize, params = {}, transaction) => {
-  validateProps(
+export const changeEmailByAdmin = async (params = {}, transaction) => {
+  commonHelper.validateProps(
     [
       { field: 'email', required: true, type: 'string' },
       { field: 'new_email', required: true, type: 'string' }
@@ -423,8 +306,7 @@ export const changeEmailByAdmin = async (sequelize, params = {}, transaction) =>
 
   const { email, new_email } = params || {}
 
-  const existingUser = await getAUser(
-    sequelize,
+  const existingUser = await userHelper.getAUser(
     { where: { [Op.or]: [{ email: new_email }, { new_email }] } },
     transaction
   )
@@ -432,9 +314,9 @@ export const changeEmailByAdmin = async (sequelize, params = {}, transaction) =>
     throw new Error('NEW_EMAIL_IS_ALREADY_ASSOCIATED_WITH_A_USER')
   }
 
-  const user = await getAUser(sequelize, { where: { email } }, transaction)
+  const user = await userHelper.getAUser({ where: { email } }, transaction)
   if (!user?.id) {
-    throw new Error('USER_IS_NOT_FOUND')
+    throw new Error('USER_DOES_NOT_EXIST')
   }
 
   await user.update({ email: new_email, new_email: null }, { transaction })
@@ -442,8 +324,8 @@ export const changeEmailByAdmin = async (sequelize, params = {}, transaction) =>
   return omit(user?.dataValues, ['old_passwords', 'password'])
 }
 
-export const changePasswordByUser = async (sequelize, params = {}, transaction) => {
-  validateProps(
+export const changePasswordByUser = async (params = {}, transaction) => {
+  commonHelper.validateProps(
     [
       { field: 'new_password', required: true, type: 'string' },
       { field: 'old_password', required: true, type: 'string' },
@@ -458,42 +340,36 @@ export const changePasswordByUser = async (sequelize, params = {}, transaction) 
     throw new Error('NEW_PASSWORD_IS_SAME_AS_OLD_PASSWORD')
   }
 
-  const user = await getAUser(sequelize, { where: { id: user_id } }, transaction)
+  const user = await userHelper.getAUser({ where: { id: user_id } }, transaction)
   if (!user?.id) {
-    throw new Error('USER_IS_NOT_FOUND')
+    throw new Error('USER_DOES_NOT_EXIST')
   }
   if (!(user?.status === 'active')) {
     throw new Error(`USER_IS_${user?.status?.toUpperCase?.()}`)
   }
-  if (!checkPasswordPolicy(new_password)) {
+  if (!commonHelper.validatePassword(new_password)) {
     throw new Error('PASSWORD_DID_NOT_CONFORM_OUR_POLICY')
   }
   // Check for old passwords
-  if (!compareHashPassword(old_password, user?.password)) {
+  if (!commonService.compareHashPassword(old_password, user?.password)) {
     throw new Error('OLD_PASSWORD_IS_INCORRECT')
   }
-  if (checkOldPasswords(new_password, user?.old_passwords)) {
+  if (commonService.checkOldPasswords(new_password, user?.old_passwords)) {
     throw new Error('PASSWORD_IS_ALREADY_USED_BEFORE')
   }
 
-  const hashPassword = generateHashPassword(new_password)
-
-  const updatingData = { password: hashPassword }
-  if (user?.has_temp_password) {
-    updatingData.has_temp_password = false
-  } else {
-    updatingData.old_passwords = [...slice(user.old_passwords, 1, 3), hashPassword]
-  }
+  const password = commonService.generateHashPassword(new_password)
+  const updatingData = { old_passwords: [...slice(user.old_passwords, 1, 3), password], password }
 
   await user.update(updatingData, { transaction })
 
-  await deleteAuthTokensForUser(sequelize, { where: { user_id } }, transaction)
+  await authTokenService.deleteAuthTokens({ where: { user_id } }, transaction)
 
   return omit(user?.dataValues, ['old_passwords', 'password'])
 }
 
-export const changePasswordByAdmin = async (sequelize, params = {}, transaction) => {
-  validateProps(
+export const changePasswordByAdmin = async (params = {}, transaction) => {
+  commonHelper.validateProps(
     [
       { field: 'email', required: true, type: 'string' },
       { field: 'password', required: true, type: 'string' }
@@ -503,33 +379,34 @@ export const changePasswordByAdmin = async (sequelize, params = {}, transaction)
 
   const { email, password } = params || {}
 
-  const user = await getAUser(sequelize, { where: { email } }, transaction)
+  const user = await userHelper.getAUser({ where: { email } }, transaction)
   if (!user?.id) {
-    throw new Error('USER_IS_NOT_FOUND')
+    throw new Error('USER_DOES_NOT_EXIST')
   }
 
-  const hashPassword = generateHashPassword(password)
-  const old_passwords = [...slice(user?.old_passwords, 1, 3), hashPassword]
+  const hashPassword = commonService.generateHashPassword(password)
 
-  await user.update({ has_temp_password: false, old_passwords, password: hashPassword }, { transaction })
+  await user.update(
+    { old_passwords: [...slice(user?.old_passwords, 1, 3), hashPassword], password: hashPassword },
+    { transaction }
+  )
 
-  await deleteAuthTokensForUser(sequelize, { where: { user_id: user?.id } }, transaction)
+  await authTokenService.deleteAuthTokens({ where: { user_id: user?.id } }, transaction)
 
   return omit(user?.dataValues, ['old_passwords', 'password'])
 }
 
-export const forgotPassword = async (sequelize, params = {}, transaction) => {
-  validateProps([{ field: 'email', required: true, type: 'string' }], params)
+export const forgotPassword = async (params = {}, transaction) => {
+  commonHelper.validateProps([{ field: 'email', required: true, type: 'string' }], params)
 
   const { email } = params || {}
 
-  const user = await getAUser(sequelize, { where: { email } }, transaction)
+  const user = await userHelper.getAUser({ where: { email } }, transaction)
   if (!user?.id) {
-    throw new Error('USER_IS_NOT_FOUND')
+    throw new Error('USER_DOES_NOT_EXIST')
   }
 
-  const existingTokens = await readVerificationTokens(
-    sequelize,
+  const existingTokens = await verificationTokenHelper.getVerificationTokens(
     {
       order: [['created_at', 'desc']],
       where: {
@@ -546,16 +423,12 @@ export const forgotPassword = async (sequelize, params = {}, transaction) => {
     throw new Error('TOO_MANY_FORGOT_PASSWORD_REQUESTS')
   }
 
-  await updateVerificationTokens(
-    sequelize,
-    {
-      data: { status: 'cancelled' },
-      options: { where: { email, status: 'unverified', type: 'forgot_password', user_id: user?.id } }
-    },
+  await verificationTokenService.updateVerificationTokens(
+    { where: { email, status: 'unverified', type: 'forgot_password', user_id: user?.id } },
+    { status: 'cancelled' },
     transaction
   )
-  await createAVerificationTokenAndSendNotification(
-    sequelize,
+  await verificationTokenService.createAVerificationTokenForUser(
     { ...user?.dataValues, type: 'forgot_password', user_id: user?.id },
     transaction
   )
@@ -563,25 +436,24 @@ export const forgotPassword = async (sequelize, params = {}, transaction) => {
   return omit(user?.dataValues, ['old_passwords', 'password'])
 }
 
-export const retryForgotPassword = async (sequelize, params = {}, transaction) => {
-  validateProps([{ field: 'email', required: true, type: 'string' }], params)
+export const retryForgotPassword = async (params = {}, transaction) => {
+  commonHelper.validateProps([{ field: 'email', required: true, type: 'string' }], params)
 
   const { email } = params || {}
 
-  const user = await getAUser(sequelize, { where: { email } }, transaction)
+  const user = await userHelper.getAUser({ where: { email } }, transaction)
   if (!user?.id) {
-    throw new Error('USER_IS_NOT_FOUND')
+    throw new Error('USER_DOES_NOT_EXIST')
   }
 
-  const existingTokens = await readVerificationTokens(
-    sequelize,
+  const existingTokens = await verificationTokenHelper.getVerificationTokens(
     {
       order: [['created_at', 'desc']],
       where: {
         created_at: { [Op.gte]: moment().subtract(10, 'minutes').toDate() },
         email,
         status: { [Op.in]: ['cancelled', 'unverified'] },
-        type: { [Op.in]: ['forgot_password', 'resend_forgot_password'] },
+        type: 'forgot_password',
         user_id: user?.id
       }
     },
@@ -591,32 +463,21 @@ export const retryForgotPassword = async (sequelize, params = {}, transaction) =
     throw new Error('TOO_MANY_FORGOT_PASSWORD_REQUESTS')
   }
 
-  await updateVerificationTokens(
-    sequelize,
-    {
-      data: { status: 'cancelled' },
-      options: {
-        where: {
-          email,
-          status: 'unverified',
-          type: { [Op.in]: ['forgot_password', 'resend_forgot_password'] },
-          user_id: user?.id
-        }
-      }
-    },
+  await verificationTokenService.updateVerificationTokens(
+    { where: { email, status: 'unverified', type: 'forgot_password', user_id: user?.id } },
+    { status: 'cancelled' },
     transaction
   )
-  await createAVerificationTokenAndSendNotification(
-    sequelize,
-    { ...user?.dataValues, type: 'resend_forgot_password', user_id: user?.id },
+  await verificationTokenService.createAVerificationTokenForUser(
+    { ...user?.dataValues, type: 'forgot_password', user_id: user?.id },
     transaction
   )
 
   return omit(user?.dataValues, ['old_passwords', 'password'])
 }
 
-export const verifyForgotPasswordCode = async (sequelize, params = {}, transaction) => {
-  validateProps(
+export const verifyForgotPasswordCode = async (params = {}, transaction) => {
+  commonHelper.validateProps(
     [
       { field: 'email', required: true, type: 'string' },
       { field: 'token', required: true, type: 'string' }
@@ -625,16 +486,8 @@ export const verifyForgotPasswordCode = async (sequelize, params = {}, transacti
   )
 
   const { email, token } = params || {}
-  const verificationToken = await readAVerificationToken(
-    sequelize,
-    {
-      where: {
-        email,
-        status: 'unverified',
-        token,
-        type: { [Op.in]: ['forgot_password', 'resend_forgot_password'] }
-      }
-    },
+  const verificationToken = await verificationTokenHelper.getAVerificationToken(
+    { where: { email, status: 'unverified', token, type: 'forgot_password' } },
     transaction
   )
   if (!verificationToken?.id) {
@@ -647,8 +500,8 @@ export const verifyForgotPasswordCode = async (sequelize, params = {}, transacti
   return { message: 'OTP_IS_VALID', success: true }
 }
 
-export const verifyForgotPassword = async (sequelize, params = {}, transaction) => {
-  validateProps(
+export const verifyForgotPassword = async (params = {}, transaction) => {
+  commonHelper.validateProps(
     [
       { field: 'email', required: true, type: 'string' },
       { field: 'password', required: true, type: 'string' },
@@ -658,50 +511,41 @@ export const verifyForgotPassword = async (sequelize, params = {}, transaction) 
   )
 
   const { email, password, token } = params || {}
-  const verificationToken = await readAVerificationToken(
-    sequelize,
-    { where: { email, status: 'unverified', token, type: { [Op.in]: ['forgot_password', 'resend_forgot_password'] } } },
+
+  await verificationTokenService.validateVerificationTokenForUser(
+    { email, token, type: 'forgot_password' },
     transaction
   )
-  if (!verificationToken?.id) {
-    throw new Error('OTP_IS_NOT_VALID')
-  }
-  if (moment(verificationToken?.expired_at).isBefore(moment())) {
-    throw new Error('OTP_IS_EXPIRED')
-  }
 
-  const user = await getAUser(sequelize, { where: { email } }, transaction)
+  const user = await userHelper.getAUser({ where: { email } }, transaction)
   if (!user?.id) {
     throw new Error('USER_IS_NOT_FOUND')
   }
-  if (!checkPasswordPolicy(password)) {
+  if (!commonHelper.validatePassword(password)) {
     throw new Error('PASSWORD_DID_NOT_CONFORM_OUR_POLICY')
   }
   // Check for old passwords
-  if (compareHashPassword(password, user?.password)) {
+  if (commonService.compareHashPassword(password, user?.password)) {
     throw new Error('PASSWORD_IS_ALREADY_USED_BEFORE')
   }
-  if (checkOldPasswords(password, user?.old_passwords)) {
+  if (commonService.checkOldPasswords(password, user?.old_passwords)) {
     throw new Error('PASSWORD_IS_ALREADY_USED_BEFORE')
   }
 
-  const hashPassword = generateHashPassword(password)
-  const old_passwords = [...slice(user?.old_passwords, 1, 3), hashPassword]
+  const hashPassword = commonService.generateHashPassword(password)
 
-  await user.update({ has_temp_password: false, old_passwords, password: hashPassword }, { transaction })
-
-  await deleteVerificationTokens(
-    sequelize,
-    { where: { email, type: { [Op.in]: ['forgot_password', 'resend_forgot_password'] } }, user_id: user?.id },
-    transaction
+  await user.update(
+    { old_passwords: [...slice(user?.old_passwords, 1, 3), hashPassword], password: hashPassword },
+    { transaction }
   )
-  await deleteAuthTokensForUser(sequelize, { where: { user_id: user?.id } }, transaction)
+
+  await authTokenService.deleteAuthTokens({ where: { user_id: user?.id } }, transaction)
 
   return omit(user?.dataValues, ['old_passwords', 'password'])
 }
 
-export const verifyUserPassword = async (sequelize, params = {}, transaction) => {
-  validateProps(
+export const verifyUserPassword = async (params = {}, transaction) => {
+  commonHelper.validateProps(
     [
       { field: 'email', required: true, type: 'string' },
       { field: 'password', required: true, type: 'string' }
@@ -711,14 +555,14 @@ export const verifyUserPassword = async (sequelize, params = {}, transaction) =>
 
   const { email, password } = params || {}
 
-  const user = await getAUser(sequelize, { where: { email } }, transaction)
+  const user = await userHelper.getAUser({ where: { email } }, transaction)
   if (!user?.id) {
     throw new Error('USER_IS_NOT_FOUND')
   }
   if (!(user?.status === 'active')) {
     throw new Error(`USER_IS_${user?.status?.toUpperCase?.()}`)
   }
-  if (!compareHashPassword(password, user?.password)) {
+  if (!commonService.compareHashPassword(password, user?.password)) {
     return { message: 'PASSWORD_IS_INCORRECT', success: false }
   }
 

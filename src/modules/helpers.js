@@ -6,3 +6,4 @@ export * as rolePermissionHelper from 'src/modules/role-permission/role-permissi
 export * as roleUserHelper from 'src/modules/role-user/role-user.helper'
 export * as roleHelper from 'src/modules/role/role.helper'
 export * as userHelper from 'src/modules/user/user.helper'
+export * as verificationTokenHelper from 'src/modules/verification-token/verification-token.helper'

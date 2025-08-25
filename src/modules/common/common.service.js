@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { forEach, isBoolean, isEmpty, join, map, omit, size } from 'lodash'
+import { size } from 'lodash'
 
 export const getRandomNumber = (length) => {
   const characters = '0123456789'
@@ -77,31 +77,6 @@ export const verifyJWTToken = (token) => {
       message: err?.message?.replaceAll(' ', '_')?.toUpperCase?.(),
       success: false
     }
-  }
-}
-
-export const validateProps = (fields = [], body = {}) => {
-  const notAllowedFields = Object.keys(omit(body, map(fields, 'field')))
-  if (size(notAllowedFields)) {
-    throw new Error(`${join(notAllowedFields, '_AND_')?.toUpperCase?.()}_NOT_ALLOWED`)
-  }
-
-  const invalidFields = []
-  const missingFields = []
-  forEach(fields, ({ field, required, type }) => {
-    if (typeof body[field] !== 'undefined' && typeof body[field] !== type) {
-      invalidFields.push(field)
-    }
-    if (required && !isBoolean(body[field]) && isEmpty(body[field])) {
-      missingFields.push(field)
-    }
-  })
-
-  if (size(invalidFields)) {
-    throw new Error(`INVALID_TYPE_OF_${join(invalidFields, '_AND_')?.toUpperCase?.()}`)
-  }
-  if (size(missingFields)) {
-    throw new Error(`MISSING_${join(missingFields, '_AND_')?.toUpperCase?.()}`)
   }
 }
 
