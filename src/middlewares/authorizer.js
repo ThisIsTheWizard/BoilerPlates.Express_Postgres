@@ -13,7 +13,7 @@ import { userService } from 'src/modules/services'
 import { CustomError } from 'src/utils/error'
 
 export const validateTokenAndGetAuthUser = async (token = '') => {
-  const payload = (await userService.verifyAuthToken({ token, type: 'access_token' })) || {}
+  const { payload } = (await userService.verifyTokenForUser({ token, type: 'access_token' })) || {}
   if (!size(payload)) {
     throw new CustomError(401, 'INVALID_TOKEN')
   }

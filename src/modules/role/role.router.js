@@ -15,6 +15,8 @@ export const roleRouter = Router()
  *     tags:
  *       - Roles
  *     summary: Create a new role
+ *     security:
+ *       - tokenAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -29,7 +31,7 @@ export const roleRouter = Router()
  *               - name
  *     responses:
  *       201:
- *         description: Role created successfully
+ *         description: SUCCESS
  *         content:
  *           application/json:
  *             schema:
@@ -44,6 +46,8 @@ roleRouter.post('/', authorizer(), roleController.createARole)
  *     tags:
  *       - Roles
  *     summary: Update role by ID
+ *     security:
+ *       - tokenAuth: []
  *     parameters:
  *       - in: path
  *         name: entity_id
@@ -63,7 +67,7 @@ roleRouter.post('/', authorizer(), roleController.createARole)
  *                 enum: [admin, developer, moderator, user]
  *     responses:
  *       200:
- *         description: Role updated successfully
+ *         description: SUCCESS
  *         content:
  *           application/json:
  *             schema:
@@ -78,6 +82,8 @@ roleRouter.put('/:entity_id', authorizer(), roleController.updateARole)
  *     tags:
  *       - Roles
  *     summary: Delete role by ID
+ *     security:
+ *       - tokenAuth: []
  *     parameters:
  *       - in: path
  *         name: entity_id
@@ -87,7 +93,7 @@ roleRouter.put('/:entity_id', authorizer(), roleController.updateARole)
  *           format: uuid
  *     responses:
  *       200:
- *         description: Role deleted successfully
+ *         description: SUCCESS
  *         content:
  *           application/json:
  *             schema:
@@ -102,9 +108,11 @@ roleRouter.delete('/:entity_id', authorizer(), roleController.deleteARole)
  *     tags:
  *       - Roles
  *     summary: Get all roles
+ *     security:
+ *       - tokenAuth: []
  *     responses:
  *       200:
- *         description: A list of roles
+ *         description: SUCCESS
  *         content:
  *           application/json:
  *             schema:
@@ -121,6 +129,8 @@ roleRouter.get('/', authorizer(), roleController.getRoles)
  *     tags:
  *       - Roles
  *     summary: Get role by ID
+ *     security:
+ *       - tokenAuth: []
  *     parameters:
  *       - in: path
  *         name: entity_id
@@ -130,7 +140,7 @@ roleRouter.get('/', authorizer(), roleController.getRoles)
  *           format: uuid
  *     responses:
  *       200:
- *         description: Role object
+ *         description: SUCCESS
  *         content:
  *           application/json:
  *             schema:

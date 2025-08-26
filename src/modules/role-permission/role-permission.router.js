@@ -15,6 +15,8 @@ export const rolePermissionRouter = Router()
  *     tags:
  *       - Role Permissions
  *     summary: Create a new role permission
+ *     security:
+ *       - tokenAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -36,7 +38,7 @@ export const rolePermissionRouter = Router()
  *               - can_do_the_action
  *     responses:
  *       201:
- *         description: Role permission created successfully
+ *         description: SUCCESS
  *         content:
  *           application/json:
  *             schema:
@@ -51,6 +53,8 @@ rolePermissionRouter.post('/', authorizer(), rolePermissionController.createARol
  *     tags:
  *       - Role Permissions
  *     summary: Update role permission by ID
+ *     security:
+ *       - tokenAuth: []
  *     parameters:
  *       - in: path
  *         name: entity_id
@@ -69,7 +73,7 @@ rolePermissionRouter.post('/', authorizer(), rolePermissionController.createARol
  *                 type: boolean
  *     responses:
  *       200:
- *         description: Role permission updated successfully
+ *         description: SUCCESS
  *         content:
  *           application/json:
  *             schema:
@@ -84,6 +88,8 @@ rolePermissionRouter.put('/:entity_id', authorizer(), rolePermissionController.u
  *     tags:
  *       - Role Permissions
  *     summary: Delete role permission by ID
+ *     security:
+ *       - tokenAuth: []
  *     parameters:
  *       - in: path
  *         name: entity_id
@@ -93,7 +99,7 @@ rolePermissionRouter.put('/:entity_id', authorizer(), rolePermissionController.u
  *           format: uuid
  *     responses:
  *       200:
- *         description: Role permission deleted successfully
+ *         description: SUCCESS
  *         content:
  *           application/json:
  *             schema:
@@ -108,9 +114,11 @@ rolePermissionRouter.delete('/:entity_id', authorizer(), rolePermissionControlle
  *     tags:
  *       - Role Permissions
  *     summary: Get all role permissions
+ *     security:
+ *       - tokenAuth: []
  *     responses:
  *       200:
- *         description: A list of role permissions
+ *         description: SUCCESS
  *         content:
  *           application/json:
  *             schema:
@@ -127,6 +135,8 @@ rolePermissionRouter.get('/', authorizer(), rolePermissionController.getRolePerm
  *     tags:
  *       - Role Permissions
  *     summary: Get role permission by ID
+ *     security:
+ *       - tokenAuth: []
  *     parameters:
  *       - in: path
  *         name: entity_id
@@ -136,7 +146,7 @@ rolePermissionRouter.get('/', authorizer(), rolePermissionController.getRolePerm
  *           format: uuid
  *     responses:
  *       200:
- *         description: Role permission object
+ *         description: SUCCESS
  *         content:
  *           application/json:
  *             schema:

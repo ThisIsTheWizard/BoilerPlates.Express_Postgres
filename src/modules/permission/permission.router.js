@@ -15,6 +15,8 @@ export const permissionRouter = Router()
  *     tags:
  *       - Permissions
  *     summary: Create a new permission
+ *     security:
+ *       - tokenAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -33,7 +35,7 @@ export const permissionRouter = Router()
  *               - module
  *     responses:
  *       201:
- *         description: Permission created successfully
+ *         description: SUCCESS
  *         content:
  *           application/json:
  *             schema:
@@ -48,6 +50,8 @@ permissionRouter.post('/', authorizer(), permissionController.createAPermission)
  *     tags:
  *       - Permissions
  *     summary: Update permission by ID
+ *     security:
+ *       - tokenAuth: []
  *     parameters:
  *       - in: path
  *         name: entity_id
@@ -70,7 +74,7 @@ permissionRouter.post('/', authorizer(), permissionController.createAPermission)
  *                 enum: [permission, role, role_permission, role_user, user]
  *     responses:
  *       200:
- *         description: Permission updated successfully
+ *         description: SUCCESS
  *         content:
  *           application/json:
  *             schema:
@@ -85,6 +89,8 @@ permissionRouter.put('/:entity_id', authorizer(), permissionController.updateAPe
  *     tags:
  *       - Permissions
  *     summary: Delete permission by ID
+ *     security:
+ *       - tokenAuth: []
  *     parameters:
  *       - in: path
  *         name: entity_id
@@ -94,7 +100,7 @@ permissionRouter.put('/:entity_id', authorizer(), permissionController.updateAPe
  *           format: uuid
  *     responses:
  *       200:
- *         description: Permission deleted successfully
+ *         description: SUCCESS
  *         content:
  *           application/json:
  *             schema:
@@ -109,9 +115,11 @@ permissionRouter.delete('/:entity_id', authorizer(), permissionController.delete
  *     tags:
  *       - Permissions
  *     summary: Get all permissions
+ *     security:
+ *       - tokenAuth: []
  *     responses:
  *       200:
- *         description: A list of permissions
+ *         description: SUCCESS
  *         content:
  *           application/json:
  *             schema:
@@ -128,6 +136,8 @@ permissionRouter.get('/', authorizer(), permissionController.getPermissions)
  *     tags:
  *       - Permissions
  *     summary: Get permission by ID
+ *     security:
+ *       - tokenAuth: []
  *     parameters:
  *       - in: path
  *         name: entity_id
@@ -137,7 +147,7 @@ permissionRouter.get('/', authorizer(), permissionController.getPermissions)
  *           format: uuid
  *     responses:
  *       200:
- *         description: Permission object
+ *         description: SUCCESS
  *         content:
  *           application/json:
  *             schema:

@@ -40,7 +40,7 @@ roleUserController.createARoleUser = async (req, res, next) => {
       roleUserService.createARoleUserForMutation(req.body, req.user, transaction)
     )
 
-    res.status(200).json({ data, message: 'SUCCESS' })
+    res.status(201).json({ data, message: 'SUCCESS' })
   } catch (error) {
     next(error)
   }

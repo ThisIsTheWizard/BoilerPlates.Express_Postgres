@@ -72,12 +72,14 @@ export const getAuthUserWithRolesAndPermissions = async ({ roles, user_id }) => 
     throw new Error('USER_DOES_NOT_EXIST')
   }
 
-  user.roles = map(user?.roles, 'name')
-  user.role = roleHelper.getTopRoleOfAUser(user.roles || [])
-  user.permissions = find(user?.roles, (role) => role?.name === user.role)?.permissions || []
-  user.user_id = user.id
+  const result = JSON.parse(JSON.stringify(user))
 
-  return JSON.parse(JSON.stringify(user))
+  result.roles = map(user?.roles, 'name')
+  result.role = roleHelper.getTopRoleOfAUser(user.roles || [])
+  result.permissions = find(user?.roles, (role) => role?.name === user.role)?.permissions || []
+  result.user_id = user.id
+
+  return result
 }
 
 export const getUsernameByNames = (email, first_name, last_name) => {

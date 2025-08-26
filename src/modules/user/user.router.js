@@ -35,8 +35,8 @@ export const userRouter = Router()
  *               - email
  *               - password
  *     responses:
- *       200:
- *         description: User registered successfully
+ *       201:
+ *         description: SUCCESS
  */
 userRouter.post('/register', userController.registerUser)
 
@@ -64,7 +64,7 @@ userRouter.post('/register', userController.registerUser)
  *               - token
  *     responses:
  *       200:
- *         description: User email verified successfully
+ *         description: SUCCESS
  */
 userRouter.post('/verify-user-email', userController.verifyUserEmail)
 
@@ -89,7 +89,7 @@ userRouter.post('/verify-user-email', userController.verifyUserEmail)
  *               - email
  *     responses:
  *       200:
- *         description: Verification email resent successfully
+ *         description: SUCCESS
  */
 userRouter.post('/resend-verification-email', userController.resendVerificationEmail)
 
@@ -117,7 +117,7 @@ userRouter.post('/resend-verification-email', userController.resendVerificationE
  *               - password
  *     responses:
  *       200:
- *         description: User logged in successfully
+ *         description: SUCCESS
  */
 userRouter.post('/login', userController.loginUser)
 
@@ -141,7 +141,7 @@ userRouter.post('/login', userController.loginUser)
  *               - refresh_token
  *     responses:
  *       200:
- *         description: Token refreshed successfully
+ *         description: SUCCESS
  */
 userRouter.post('/refresh-token', userController.getRefreshedTokens)
 
@@ -156,7 +156,7 @@ userRouter.post('/refresh-token', userController.getRefreshedTokens)
  *       - tokenAuth: []
  *     responses:
  *       200:
- *         description: Authenticated user data
+ *         description: SUCCESS
  */
 userRouter.get('/me', authorizer(), userController.getAuthUser)
 
@@ -171,7 +171,7 @@ userRouter.get('/me', authorizer(), userController.getAuthUser)
  *       - tokenAuth: []
  *     responses:
  *       200:
- *         description: User logged out successfully
+ *         description: SUCCESS
  */
 userRouter.post('/logout', authorizer(), userController.logoutUser)
 
@@ -198,7 +198,7 @@ userRouter.post('/logout', authorizer(), userController.logoutUser)
  *               - email
  *     responses:
  *       200:
- *         description: Email change request sent successfully
+ *         description: SUCCESS
  */
 userRouter.post('/change-email', authorizer(), userController.changeEmail)
 
@@ -213,7 +213,7 @@ userRouter.post('/change-email', authorizer(), userController.changeEmail)
  *       - tokenAuth: []
  *     responses:
  *       200:
- *         description: Email change cancelled successfully
+ *         description: SUCCESS
  */
 userRouter.post('/cancel-change-email', authorizer(), userController.cancelChangeEmail)
 
@@ -239,7 +239,7 @@ userRouter.post('/cancel-change-email', authorizer(), userController.cancelChang
  *               - token
  *     responses:
  *       200:
- *         description: New email verified successfully
+ *         description: SUCCESS
  */
 userRouter.post('/verify-change-email', authorizer(), userController.verifyNewEmail)
 
@@ -270,7 +270,7 @@ userRouter.post('/verify-change-email', authorizer(), userController.verifyNewEm
  *               - email
  *     responses:
  *       200:
- *         description: User email set successfully by admin
+ *         description: SUCCESS
  */
 userRouter.post('/set-user-email', authorizer(['admin']), userController.setUserEmailByAdmin)
 
@@ -299,7 +299,7 @@ userRouter.post('/set-user-email', authorizer(['admin']), userController.setUser
  *               - new_password
  *     responses:
  *       200:
- *         description: Password changed successfully
+ *         description: SUCCESS
  */
 userRouter.post('/change-password', authorizer(), userController.changePassword)
 
@@ -329,7 +329,7 @@ userRouter.post('/change-password', authorizer(), userController.changePassword)
  *               - password
  *     responses:
  *       200:
- *         description: User password set successfully by admin
+ *         description: SUCCESS
  */
 userRouter.post('/set-user-password', authorizer(['admin']), userController.setUserPasswordByAdmin)
 
@@ -354,7 +354,7 @@ userRouter.post('/set-user-password', authorizer(['admin']), userController.setU
  *               - email
  *     responses:
  *       200:
- *         description: Forgot password email sent successfully
+ *         description: SUCCESS
  */
 userRouter.post('/forgot-password', userController.tryForgotPassword)
 
@@ -379,7 +379,7 @@ userRouter.post('/forgot-password', userController.tryForgotPassword)
  *               - email
  *     responses:
  *       200:
- *         description: Forgot password email resent successfully
+ *         description: SUCCESS
  */
 userRouter.post('/retry-forgot-password', userController.retryForgotPassword)
 
@@ -410,7 +410,7 @@ userRouter.post('/retry-forgot-password', userController.retryForgotPassword)
  *               - token
  *     responses:
  *       200:
- *         description: Forgot password verified successfully
+ *         description: SUCCESS
  */
 userRouter.post('/verify-forgot-password', userController.verifyForgotPassword)
 
@@ -438,7 +438,7 @@ userRouter.post('/verify-forgot-password', userController.verifyForgotPassword)
  *               - token
  *     responses:
  *       200:
- *         description: Forgot password code verified successfully
+ *         description: SUCCESS
  */
 userRouter.post('/verify-forgot-password-code', userController.verifyForgotPasswordCode)
 
@@ -464,6 +464,6 @@ userRouter.post('/verify-forgot-password-code', userController.verifyForgotPassw
  *               - password
  *     responses:
  *       200:
- *         description: User password verified successfully
+ *         description: SUCCESS
  */
 userRouter.post('/verify-user-password', authorizer(), userController.verifyUserPassword)
