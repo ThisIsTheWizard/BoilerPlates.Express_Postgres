@@ -8,12 +8,139 @@ import { authorizer } from 'src/middlewares'
 
 export const permissionRouter = Router()
 
-permissionRouter.post('/permissions', authorizer(), permissionController.createAPermission)
+/**
+ * @swagger
+ * /permissions:
+ *   post:
+ *     tags:
+ *       - Permissions
+ *     summary: Create a new permission
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               action:
+ *                 type: string
+ *                 enum: [create, read, update, delete]
+ *               module:
+ *                 type: string
+ *                 enum: [permission, role, role_permission, role_user, user]
+ *             required:
+ *               - action
+ *               - module
+ *     responses:
+ *       201:
+ *         description: Permission created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Permission'
+ */
+permissionRouter.post('/', authorizer(), permissionController.createAPermission)
 
-permissionRouter.put('/permissions/:entity_id', authorizer(), permissionController.updateAPermission)
+/**
+ * @swagger
+ * /permissions/{entity_id}:
+ *   put:
+ *     tags:
+ *       - Permissions
+ *     summary: Update permission by ID
+ *     parameters:
+ *       - in: path
+ *         name: entity_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               action:
+ *                 type: string
+ *                 enum: [create, read, update, delete]
+ *               module:
+ *                 type: string
+ *                 enum: [permission, role, role_permission, role_user, user]
+ *     responses:
+ *       200:
+ *         description: Permission updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Permission'
+ */
+permissionRouter.put('/:entity_id', authorizer(), permissionController.updateAPermission)
 
-permissionRouter.delete('/permissions/:entity_id', authorizer(), permissionController.deleteAPermission)
+/**
+ * @swagger
+ * /permissions/{entity_id}:
+ *   delete:
+ *     tags:
+ *       - Permissions
+ *     summary: Delete permission by ID
+ *     parameters:
+ *       - in: path
+ *         name: entity_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Permission deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Permission'
+ */
+permissionRouter.delete('/:entity_id', authorizer(), permissionController.deleteAPermission)
 
-permissionRouter.get('/permissions', authorizer(), permissionController.getPermissions)
+/**
+ * @swagger
+ * /permissions:
+ *   get:
+ *     tags:
+ *       - Permissions
+ *     summary: Get all permissions
+ *     responses:
+ *       200:
+ *         description: A list of permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Permission'
+ */
+permissionRouter.get('/', authorizer(), permissionController.getPermissions)
 
-permissionRouter.get('/permissions/:entity_id', authorizer(), permissionController.getAPermission)
+/**
+ * @swagger
+ * /permissions/{entity_id}:
+ *   get:
+ *     tags:
+ *       - Permissions
+ *     summary: Get permission by ID
+ *     parameters:
+ *       - in: path
+ *         name: entity_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Permission object
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Permission'
+ */
+permissionRouter.get('/:entity_id', authorizer(), permissionController.getAPermission)

@@ -8,7 +8,8 @@ import { CustomError } from 'src/utils/error'
 
 export const sequelize = new Sequelize(process.env.POSTGRES_URL, {
   dialect: 'postgres',
-  dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
+  // Please uncomment below lines for secured connection
+  // dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
   pool: { acquire: 60000, idle: 10000, max: 100, min: 0 }
 })

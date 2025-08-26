@@ -1,4 +1,4 @@
-import { omit, size, slice } from 'lodash'
+import { map, omit, pick, size, slice } from 'lodash'
 import moment from 'moment-timezone'
 import { Op } from 'sequelize'
 
@@ -9,7 +9,7 @@ import { UserEntity } from 'src/modules/entities'
 import { commonHelper, userHelper, verificationTokenHelper } from 'src/modules/helpers'
 
 // Services
-import { authTokenService, commonService, verificationTokenService } from 'src/modules/services'
+import { authTokenService, commonService, roleUserService, verificationTokenService } from 'src/modules/services'
 
 // Utils
 import { CustomError } from 'src/utils/error'
@@ -38,30 +38,40 @@ export const deleteAUser = async (options, transaction) => {
   return user
 }
 
-export const registerPassword = async (params = {}, transaction) => {
-  commonService.validateProps(
+export const registerUser = async (params = {}, transaction) => {
+  commonHelper.validateProps(
     [
-      { field: 'is_verification_required', required: true, type: 'boolean' },
-      { field: 'password', required: true, type: 'string' },
-      { field: 'user_id', required: true, type: 'string' }
+      { field: 'email', required: true, type: 'string' },
+      { field: 'first_name', required: true, type: 'string' },
+      { field: 'last_name', required: true, type: 'string' },
+      { field: 'password', required: true, type: 'string' }
     ],
     params
   )
 
-  const { password, user_id } = params || {}
+  const { email, first_name, last_name, password } = params || {}
   if (!commonHelper.validatePassword(password)) {
     throw new Error('PASSWORD_DID_NOT_CONFORM_OUR_POLICY')
   }
 
-  const user = await userHelper.getAUser({ where: { id: user_id } }, transaction)
-  if (!user?.id) {
-    throw new Error('USER_DOES_NOT_EXIST')
+  const existingUser = await userHelper.getAUser({ where: { email } }, transaction)
+  if (existingUser?.id) {
+    throw new Error('EMAIL_IS_ALREADY_ASSOCIATED_WITH_A_USER')
   }
 
-  await user.update({ password: commonService.generateHashPassword(password), status: 'unverified' }, { transaction })
+  const user = await createAUser(
+    { email, first_name, last_name, password: commonService.generateHashPassword(password) },
+    null,
+    transaction
+  )
+  if (!user?.id) {
+    throw new Error('COULD_NOT_CREATE_USER')
+  }
+
+  await roleUserService.assignARoleToUserByName({ role_name: 'user', user_id: user?.id }, transaction)
 
   await verificationTokenService.createAVerificationTokenForUser(
-    { ...user?.dataValues, type: 'user_verification', user_id },
+    { ...pick(user, ['email', 'first_name', 'last_name']), type: 'user_verification', user_id: user?.id },
     transaction
   )
 
@@ -71,20 +81,20 @@ export const registerPassword = async (params = {}, transaction) => {
 export const verifyUserEmail = async (params = {}, transaction) => {
   commonHelper.validateProps(
     [
-      { field: 'token', required: true, type: 'string' },
-      { field: 'user_id', required: true, type: 'string' }
+      { field: 'email', required: true, type: 'string' },
+      { field: 'token', required: true, type: 'string' }
     ],
     params
   )
 
-  const { token, user_id } = params || {}
+  const { email, token } = params || {}
 
   await verificationTokenService.validateVerificationTokenForUser(
-    { token, type: 'user_verification', user_id },
+    { email, token, type: 'user_verification' },
     transaction
   )
 
-  const user = await userHelper.getAUser({ where: { id: user_id } }, transaction)
+  const user = await userHelper.getAUser({ where: { email } }, transaction)
   if (!user?.id) {
     throw new Error('USER_DOES_NOT_EXIST')
   }
@@ -129,7 +139,7 @@ export const resendUserVerificationEmail = async (params = {}, transaction) => {
   )
 
   await verificationTokenService.createAVerificationTokenForUser(
-    { ...user?.dataValues, email, type: 'user_verification', user_id: user?.id },
+    { ...pick(user, ['email', 'first_name', 'last_name']), type: 'user_verification', user_id: user?.id },
     transaction
   )
 
@@ -139,15 +149,14 @@ export const resendUserVerificationEmail = async (params = {}, transaction) => {
 export const loginUser = async (params = {}, transaction) => {
   commonHelper.validateProps(
     [
-      { field: 'roles', required: true, type: 'object' },
-      { field: 'password', required: true, type: 'string' },
-      { field: 'user_id', required: true, type: 'string' }
+      { field: 'email', required: true, type: 'string' },
+      { field: 'password', required: true, type: 'string' }
     ],
     params
   )
 
-  const { password, roles, user_id } = params || {}
-  const user = await userHelper.getAUser({ where: { id: user_id } }, transaction)
+  const { email, password } = params || {}
+  const user = await userHelper.getAUser({ include: [{ association: 'roles' }], where: { email } }, transaction)
   if (!user?.id) {
     throw new Error('USER_DOES_NOT_EXIST')
   }
@@ -158,7 +167,7 @@ export const loginUser = async (params = {}, transaction) => {
     throw new Error('PASSWORD_IS_INCORRECT')
   }
 
-  return authTokenService.createAuthTokensForUser({ roles, user_id: user?.id }, transaction)
+  return authTokenService.createAuthTokensForUser({ roles: map(user?.roles, 'name'), user_id: user?.id }, transaction)
 }
 
 export const logoutAUser = async (params, transaction) => authTokenService.revokeAnAuthTokenForUser(params, transaction)
@@ -226,7 +235,7 @@ export const changeEmailByUser = async (params = {}, transaction) => {
   )
 
   await verificationTokenService.createAVerificationTokenForUser(
-    { ...user?.dataValues, email: new_email, type: 'user_verification', user_id: user?.id },
+    { ...pick(user, ['first_name', 'last_name']), email: new_email, type: 'user_verification', user_id: user?.id },
     transaction
   )
 
@@ -429,7 +438,7 @@ export const forgotPassword = async (params = {}, transaction) => {
     transaction
   )
   await verificationTokenService.createAVerificationTokenForUser(
-    { ...user?.dataValues, type: 'forgot_password', user_id: user?.id },
+    { ...pick(user, ['first_name', 'last_name']), email, type: 'forgot_password', user_id: user?.id },
     transaction
   )
 
@@ -469,7 +478,7 @@ export const retryForgotPassword = async (params = {}, transaction) => {
     transaction
   )
   await verificationTokenService.createAVerificationTokenForUser(
-    { ...user?.dataValues, type: 'forgot_password', user_id: user?.id },
+    { ...pick(user, ['first_name', 'last_name']), email, type: 'forgot_password', user_id: user?.id },
     transaction
   )
 

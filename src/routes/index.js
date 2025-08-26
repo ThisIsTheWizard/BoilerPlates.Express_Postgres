@@ -1,9 +1,18 @@
 import { Router } from 'express'
 
 // Routers
-import { permissionRouter, rolePermissionRouter, roleRouter, roleUserRouter, userRouter } from 'src/modules/routers'
+import {
+  docRouter,
+  permissionRouter,
+  rolePermissionRouter,
+  roleRouter,
+  roleUserRouter,
+  userRouter
+} from 'src/modules/routers'
 
 const router = Router()
+
+router.use('/docs', docRouter)
 
 router.use('/permissions', permissionRouter)
 

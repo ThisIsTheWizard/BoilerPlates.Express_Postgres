@@ -16,7 +16,7 @@ export const AuthTemplateEntity = sequelize.define(
       type: DataTypes.TEXT
     },
     created_by: {
-      allowNull: false,
+      allowNull: true,
       type: DataTypes.UUID
     },
     event: {
@@ -36,7 +36,6 @@ export const AuthTemplateEntity = sequelize.define(
       { fields: ['created_by'] },
       { fields: ['event'], unique: true },
       { fields: ['subject'] },
-      { fields: ['title'] },
       { fields: ['updated_at'] }
     ],
     timestamps: true,

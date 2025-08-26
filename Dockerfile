@@ -4,8 +4,6 @@ LABEL org.opencontainers.image.authors="Elias Shekh"
 
 WORKDIR /app
 
-COPY .npmrc .npmrc
-
 COPY package.json .
 
 RUN npm i -g pnpm

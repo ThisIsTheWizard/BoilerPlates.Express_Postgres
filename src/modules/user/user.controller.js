@@ -19,9 +19,9 @@ userController.registerUser = async (req, res, next) => {
 
 userController.verifyUserEmail = async (req, res, next) => {
   try {
-    const user = await useTransaction(async (transaction) => await userService.verifyUserEmail(req.body, transaction))
+    const data = await useTransaction(async (transaction) => await userService.verifyUserEmail(req.body, transaction))
 
-    res.status(200).json({ data: { success: true, user }, message: 'Successfully verified user email!' })
+    res.status(200).json({ data, message: 'SUCCESS' })
   } catch (err) {
     next(err)
   }

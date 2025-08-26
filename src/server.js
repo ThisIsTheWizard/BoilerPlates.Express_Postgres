@@ -26,6 +26,10 @@ app.use((req, res, next) => {
   next()
 })
 
+// Body Parser
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+
 // Welcome to Route
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'Welcome To Express.js API Server' })

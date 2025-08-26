@@ -23,6 +23,10 @@ export const UserEntity = sequelize.define(
       allowNull: true,
       type: DataTypes.STRING
     },
+    new_email: {
+      allowNull: true,
+      type: DataTypes.STRING
+    },
     phone_number: {
       allowNull: true,
       type: DataTypes.STRING

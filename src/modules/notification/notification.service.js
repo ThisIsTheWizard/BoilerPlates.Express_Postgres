@@ -22,6 +22,9 @@ const sendEmailBySES = async (params) => {
       throw new Error('COULD_NOT_PREPARE_EMAIL_CONTENT')
     }
 
+    console.log('RAW CONTENT', rawContent.toString())
+    return rawContent
+    /* eslint-disable-next-line no-unreachable */
     const sesClient = new SESClient({
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY,

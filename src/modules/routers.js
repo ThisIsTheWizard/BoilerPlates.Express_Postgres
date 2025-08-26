@@ -1,3 +1,4 @@
+export { docRouter } from 'src/modules/doc/doc.router'
 export { permissionRouter } from 'src/modules/permission/permission.router'
 export { rolePermissionRouter } from 'src/modules/role-permission/role-permission.router'
 export { roleUserRouter } from 'src/modules/role-user/role-user.router'

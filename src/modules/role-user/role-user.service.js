@@ -38,52 +38,33 @@ export const deleteARoleUser = async (options, transaction) => {
   return roleUser
 }
 
-// AssignARoleToUserByName: This method will not throw error if there is any error.
-// Please handle error from parent method when using it.
-export const assignARoleToUserByName = async (params, options, transaction) => {
-  try {
-    const roleQueryData = { name: params.role }
-    const roleUserCreationData = { user_id: params.user_id }
+export const assignARoleToUserByName = async (params, transaction) => {
+  commonHelper.validateRequiredProps(['role_name', 'user_id'], params)
 
-    if (params.org_id && params.role !== 'user') {
-      roleQueryData.org_id = params.org_id
-      roleUserCreationData.org_id = params.org_id
-    }
-    if (params.org_user_id) {
-      roleUserCreationData.org_user_id = params.org_user_id
-    }
+  const roleUserCreationData = { user_id: params?.user_id }
 
-    const role = await roleHelper.getARole({ where: roleQueryData }, transaction)
-    if (!role?.id) {
-      throw new CustomError(404, 'ROLE_NOT_FOUND')
-    }
-
-    roleUserCreationData.role_id = role.id
-
-    return RoleUserEntity.create(roleUserCreationData, { ...options, transaction })
-  } catch {
-    return {}
+  const role = await roleHelper.getARole({ where: { name: params?.role_name } }, transaction)
+  if (!role?.id) {
+    throw new CustomError(404, 'ROLE_DOES_NOT_EXIST')
   }
+
+  roleUserCreationData.role_id = role.id
+
+  return createARoleUser(roleUserCreationData, null, transaction)
 }
 
 export const revokeARoleFromUserByName = async (params, transaction) => {
-  const { app_user_id, org_id, org_user_id, role_name, user_id } = params || {}
-  if (!(role_name && user_id)) {
-    throw new CustomError(400, 'BAD_INPUT')
+  commonHelper.validateRequiredProps(['role_name', 'user_id'], params)
+
+  const role = await roleHelper.getARole({ where: { name: params?.role_name } })
+  if (!role?.id) {
+    throw new CustomError(404, 'ROLE_DOES_NOT_EXIST')
   }
 
-  const isAdminOrUserRole = ['admin', 'manager', 'user'].includes(role_name)
-  const roleQuery = { name: role_name }
-  if (!isAdminOrUserRole && org_id) roleQuery.org_id = org_id
-
-  const role = await roleHelper.getARole({ where: roleQuery })
-  if (!role?.id) throw new CustomError(404, 'ROLE_NOT_FOUND')
-
-  const roleUserQuery = { user_id, role_id: role?.id }
-  if (isAdminOrUserRole && app_user_id) roleUserQuery.app_user_id = app_user_id
-  if (!isAdminOrUserRole && org_user_id) roleUserQuery.org_user_id = org_user_id
-
-  const removedRoleUser = await roleUserService.deleteARoleUser({ where: roleUserQuery }, transaction)
+  const removedRoleUser = await roleUserService.deleteARoleUser(
+    { where: { user_id: params?.user_id, role_id: role?.id } },
+    transaction
+  )
   if (!removedRoleUser?.id) {
     throw new CustomError(500, 'COULD_NOT_REMOVE_ROLE_USER')
   }

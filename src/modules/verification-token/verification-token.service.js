@@ -48,6 +48,8 @@ export const createAVerificationTokenForUser = async (params, transaction) => {
   commonHelper.validateProps(
     [
       { field: 'email', required: true, type: 'string' },
+      { field: 'first_name', required: false, type: 'string' },
+      { field: 'last_name', required: false, type: 'string' },
       { field: 'type', required: true, type: 'string' },
       { field: 'user_id', required: true, type: 'string' }
     ],

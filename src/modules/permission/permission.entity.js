@@ -14,12 +14,12 @@ export const PermissionEntity = sequelize.define(
     action: {
       allowNull: false,
       type: DataTypes.ENUM,
-      values: []
+      values: ['create', 'read', 'update', 'delete']
     },
     module: {
       allowNull: false,
       type: DataTypes.ENUM,
-      values: []
+      values: ['permission', 'role', 'role_permission', 'role_user', 'user']
     },
     created_by: {
       allowNull: true,

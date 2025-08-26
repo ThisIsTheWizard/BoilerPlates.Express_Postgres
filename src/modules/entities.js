@@ -10,11 +10,13 @@ import { VerificationTokenEntity } from 'src/modules/verification-token/verifica
 // ==== Associations ====
 // <--- RoleEntity --->
 RoleEntity.belongsToMany(PermissionEntity, {
+  as: 'permissions',
   foreignKey: 'role_id',
   otherKey: 'permission_id',
   through: 'role_permissions'
 })
 PermissionEntity.belongsToMany(RoleEntity, {
+  as: 'roles',
   foreignKey: 'permission_id',
   otherKey: 'role_id',
   through: 'role_permissions'
@@ -31,10 +33,16 @@ AuthTokenEntity.belongsTo(UserEntity, { foreignKey: 'user_id' })
 UserEntity.hasMany(PermissionEntity, { foreignKey: 'created_by' })
 PermissionEntity.belongsTo(UserEntity, { as: 'author', foreignKey: 'created_by' })
 
-UserEntity.hasMany(RoleEntity, { foreignKey: 'created_by' })
+UserEntity.hasMany(RoleEntity, { as: 'owned_roles', foreignKey: 'created_by' })
 RoleEntity.belongsTo(UserEntity, { as: 'author', foreignKey: 'created_by' })
 
-UserEntity.belongsToMany(RoleEntity, { as: 'roles', foreignKey: 'user_id', otherKey: 'role_id', through: 'role_users' })
+UserEntity.belongsToMany(RoleEntity, {
+  as: 'roles',
+  foreignKey: 'user_id',
+  onDelete: 'CASCADE',
+  otherKey: 'role_id',
+  through: 'role_users'
+})
 RoleEntity.belongsToMany(UserEntity, {
   as: 'users',
   foreignKey: 'role_id',

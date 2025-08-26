@@ -37,8 +37,10 @@ export const deleteAnAuthToken = async (options, transaction) => {
 
 export const deleteAuthTokens = async (options, transaction) => AuthTokenEntity.destroy({ ...options, transaction })
 
-export const createAuthTokensForUser = async (user, transaction) => {
-  const { roles, user_id } = user || {}
+export const createAuthTokensForUser = async (params, transaction) => {
+  commonHelper.validateRequiredProps(['roles', 'user_id'], params)
+
+  const { roles, user_id } = params || {}
 
   const accessTokenExpiry = process.env.ACCESS_TOKEN_EXPIRY || '1d'
   const refreshTokenExpiry = process.env.REFRESH_TOKEN_EXPIRY || '30d'
