@@ -85,9 +85,11 @@ userController.logoutUser = async (req, res, next) => {
 
 userController.changeEmail = async (req, res, next) => {
   try {
-    await useTransaction(async (transaction) => userService.changeEmail(req?.body, req?.user, transaction))
+    const data = await useTransaction(async (transaction) =>
+      userService.changeEmailByUser({ new_email: req?.body?.email, user_id: req?.user?.user_id }, transaction)
+    )
 
-    res.status(200).json({ data: { success: true }, message: 'SUCCESS' })
+    res.status(200).json({ data, message: 'SUCCESS' })
   } catch (err) {
     next(err)
   }
@@ -95,9 +97,11 @@ userController.changeEmail = async (req, res, next) => {
 
 userController.cancelChangeEmail = async (req, res, next) => {
   try {
-    await useTransaction(async (transaction) => userService.cancelChangeEmail(req?.user, transaction))
+    const data = await useTransaction(async (transaction) =>
+      userService.cancelChangeEmailByUser(req?.body, transaction)
+    )
 
-    res.status(200).json({ data: { success: true }, message: 'SUCCESS' })
+    res.status(200).json({ data, message: 'SUCCESS' })
   } catch (err) {
     next(err)
   }
@@ -105,9 +109,11 @@ userController.cancelChangeEmail = async (req, res, next) => {
 
 userController.verifyNewEmail = async (req, res, next) => {
   try {
-    await useTransaction(async (transaction) => userService.verifyNewEmail(req?.body, req?.user, transaction))
+    const data = await useTransaction(async (transaction) =>
+      userService.verifyChangeEmailByUser({ token: req?.body?.token, user_id: req?.user?.user_id }, transaction)
+    )
 
-    res.status(200).json({ data: { success: true }, message: 'SUCCESS' })
+    res.status(200).json({ data, message: 'SUCCESS' })
   } catch (err) {
     next(err)
   }
@@ -115,9 +121,9 @@ userController.verifyNewEmail = async (req, res, next) => {
 
 userController.setUserEmailByAdmin = async (req, res, next) => {
   try {
-    await useTransaction(async (transaction) => userService.setUserEmailByAdmin(req?.body, req.user, transaction))
+    const data = await useTransaction(async (transaction) => userService.setUserEmailByAdmin(req?.body, transaction))
 
-    res.status(200).json({ data: { success: true }, message: 'SUCCESS' })
+    res.status(200).json({ data, message: 'SUCCESS' })
   } catch (err) {
     next(err)
   }
@@ -125,10 +131,18 @@ userController.setUserEmailByAdmin = async (req, res, next) => {
 
 userController.changePassword = async (req, res, next) => {
   try {
-    const { body = {}, user } = req || {}
-    await useTransaction(async (transaction) => userService.changePassword(body, user, transaction))
+    const data = await useTransaction(async (transaction) =>
+      userService.changePasswordByUser(
+        {
+          new_password: req?.body?.new_password,
+          old_password: req?.body?.old_password,
+          user_id: req?.user?.user_id
+        },
+        transaction
+      )
+    )
 
-    res.status(200).json({ data: { success: true }, message: 'SUCCESS' })
+    res.status(200).json({ data, message: 'SUCCESS' })
   } catch (err) {
     next(err)
   }
@@ -136,9 +150,9 @@ userController.changePassword = async (req, res, next) => {
 
 userController.setUserPasswordByAdmin = async (req, res, next) => {
   try {
-    await useTransaction(async (transaction) => userService.setUserPasswordByAdmin(req.body, transaction))
+    const data = await useTransaction(async (transaction) => userService.changePasswordByAdmin(req.body, transaction))
 
-    res.status(200).json({ data: { success: true }, message: 'SUCCESS' })
+    res.status(200).json({ data, message: 'SUCCESS' })
   } catch (err) {
     next(err)
   }
@@ -146,9 +160,9 @@ userController.setUserPasswordByAdmin = async (req, res, next) => {
 
 userController.tryForgotPassword = async (req, res, next) => {
   try {
-    await useTransaction(async (transaction) => userService.tryForgotPassword(req?.body, transaction))
+    const data = await useTransaction(async (transaction) => userService.forgotPassword(req?.body, transaction))
 
-    res.status(200).json({ data: { success: true }, message: 'SUCCESS' })
+    res.status(200).json({ data, message: 'SUCCESS' })
   } catch (err) {
     next(err)
   }
@@ -166,9 +180,9 @@ userController.retryForgotPassword = async (req, res, next) => {
 
 userController.verifyForgotPassword = async (req, res, next) => {
   try {
-    await useTransaction(async (transaction) => userService.verifyForgotPassword(req?.body, transaction))
+    const data = await useTransaction(async (transaction) => userService.verifyForgotPassword(req?.body, transaction))
 
-    res.status(200).json({ data: { success: true }, message: 'SUCCESS' })
+    res.status(200).json({ data, message: 'SUCCESS' })
   } catch (err) {
     next(err)
   }
@@ -176,9 +190,11 @@ userController.verifyForgotPassword = async (req, res, next) => {
 
 userController.verifyForgotPasswordCode = async (req, res, next) => {
   try {
-    await useTransaction(async (transaction) => userService.verifyForgotPasswordCode(req?.body, transaction))
+    const data = await useTransaction(async (transaction) =>
+      userService.verifyForgotPasswordCode(req?.body, transaction)
+    )
 
-    res.status(200).json({ data: { success: true }, message: 'SUCCESS' })
+    res.status(200).json({ data, message: 'SUCCESS' })
   } catch (err) {
     next(err)
   }
@@ -187,7 +203,7 @@ userController.verifyForgotPasswordCode = async (req, res, next) => {
 userController.verifyUserPassword = async (req, res, next) => {
   try {
     const data = await useTransaction(async (transaction) =>
-      userService.verifyUserPassword(req?.body, req?.user, transaction)
+      userService.verifyUserPassword({ password: req?.body?.password, user_id: req?.user?.user_id }, transaction)
     )
 
     res.status(200).json({ data, message: 'SUCCESS' })

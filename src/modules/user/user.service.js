@@ -75,7 +75,7 @@ export const registerUser = async (params = {}, transaction) => {
     transaction
   )
 
-  return omit(user?.dataValues, ['old_passwords', 'password'])
+  return omit(user?.dataValues, ['created_at', 'new_email', 'old_passwords', 'password', 'updated_at'])
 }
 
 export const verifyUserEmail = async (params = {}, transaction) => {
@@ -101,7 +101,7 @@ export const verifyUserEmail = async (params = {}, transaction) => {
 
   await user.update({ status: 'active' }, { transaction })
 
-  return omit(user?.dataValues, ['old_passwords', 'password'])
+  return omit(user?.dataValues, ['created_at', 'new_email', 'old_passwords', 'password', 'updated_at'])
 }
 
 export const resendUserVerificationEmail = async (params = {}, transaction) => {
@@ -143,7 +143,7 @@ export const resendUserVerificationEmail = async (params = {}, transaction) => {
     transaction
   )
 
-  return omit(user?.dataValues, ['old_passwords', 'password'])
+  return omit(user?.dataValues, ['created_at', 'new_email', 'old_passwords', 'password', 'updated_at'])
 }
 
 export const loginUser = async (params = {}, transaction) => {
@@ -172,17 +172,20 @@ export const loginUser = async (params = {}, transaction) => {
 
 export const logoutAUser = async (params, transaction) => authTokenService.revokeAnAuthTokenForUser(params, transaction)
 
-export const logoutAUserByAdmin = async (params, transaction) =>
-  authTokenService.revokeAuthTokensForUser(params, transaction)
-
 export const verifyTokenForUser = async (params, transaction) =>
   authTokenService.verifyAnAuthTokenForUser(params, transaction)
 
 export const refreshTokensForUser = async (params = {}, transaction) => {
-  commonHelper.validateProps([{ field: 'refresh_token', required: true, type: 'string' }], params)
+  commonHelper.validateProps(
+    [
+      { field: 'access_token', required: true, type: 'string' },
+      { field: 'refresh_token', required: true, type: 'string' }
+    ],
+    params
+  )
 
-  const { refresh_token } = params || {}
-  const { roles, user_id } = commonService.decodeJWTToken(refresh_token) || {}
+  const { access_token, refresh_token } = params || {}
+  const { roles, user_id } = commonService.decodeJWTToken(access_token) || {}
 
   const user = await userHelper.getAuthUserWithRolesAndPermissions({ roles, user_id })
 
@@ -192,13 +195,13 @@ export const refreshTokensForUser = async (params = {}, transaction) => {
 export const changeEmailByUser = async (params = {}, transaction) => {
   commonHelper.validateProps(
     [
-      { field: 'email', required: true, type: 'string' },
-      { field: 'new_email', required: true, type: 'string' }
+      { field: 'new_email', required: true, type: 'string' },
+      { field: 'user_id', required: true, type: 'string' }
     ],
     params
   )
 
-  const { email, new_email } = params || {}
+  const { new_email, user_id } = params || {}
 
   if (!commonHelper.validateEmail(new_email)) {
     throw new Error('EMAIL_IS_INVALID')
@@ -212,7 +215,7 @@ export const changeEmailByUser = async (params = {}, transaction) => {
     throw new Error('NEW_EMAIL_IS_ALREADY_ASSOCIATED_WITH_A_USER')
   }
 
-  const user = await userHelper.getAUser({ where: { email } }, transaction)
+  const user = await userHelper.getAUser({ where: { id: user_id } }, transaction)
   if (!user?.id) {
     throw new Error('USER_DOES_NOT_EXIST')
   }
@@ -226,20 +229,20 @@ export const changeEmailByUser = async (params = {}, transaction) => {
     {
       where: {
         email: new_email,
-        status: 'unverified',
+        status: { [Op.in]: ['cancelled', 'unverified'] },
         type: 'user_verification',
-        user_id: user?.id
+        user_id
       }
     },
     transaction
   )
 
   await verificationTokenService.createAVerificationTokenForUser(
-    { ...pick(user, ['first_name', 'last_name']), email: new_email, type: 'user_verification', user_id: user?.id },
+    { ...pick(user, ['first_name', 'last_name']), email: new_email, type: 'user_verification', user_id },
     transaction
   )
 
-  return omit(user?.dataValues, ['old_passwords', 'password'])
+  return omit(user?.dataValues, ['created_at', 'new_email', 'old_passwords', 'password', 'updated_at'])
 }
 
 export const cancelChangeEmailByUser = async (params, transaction) => {
@@ -261,7 +264,7 @@ export const cancelChangeEmailByUser = async (params, transaction) => {
     {
       where: {
         email,
-        status: 'unverified',
+        status: { [Op.in]: ['cancelled', 'unverified'] },
         type: 'user_verification',
         user_id: user?.id
       }
@@ -272,7 +275,7 @@ export const cancelChangeEmailByUser = async (params, transaction) => {
     throw new Error('NO_CHANGE_EMAIL_REQUEST_IS_FOUND')
   }
 
-  return omit(user?.dataValues, ['old_passwords', 'password'])
+  return omit(user?.dataValues, ['created_at', 'new_email', 'old_passwords', 'password', 'updated_at'])
 }
 
 export const verifyChangeEmailByUser = async (params = {}, transaction) => {
@@ -301,14 +304,14 @@ export const verifyChangeEmailByUser = async (params = {}, transaction) => {
 
   await user.update({ email: user?.new_email, new_email: null }, { transaction })
 
-  return omit(user?.dataValues, ['old_passwords', 'password'])
+  return omit(user?.dataValues, ['created_at', 'new_email', 'old_passwords', 'password', 'updated_at'])
 }
 
-export const changeEmailByAdmin = async (params = {}, transaction) => {
+export const setUserEmailByAdmin = async (params = {}, transaction) => {
   commonHelper.validateProps(
     [
-      { field: 'email', required: true, type: 'string' },
-      { field: 'new_email', required: true, type: 'string' }
+      { field: 'new_email', required: true, type: 'string' },
+      { field: 'user_id', required: true, type: 'string' }
     ],
     params
   )
@@ -330,7 +333,7 @@ export const changeEmailByAdmin = async (params = {}, transaction) => {
 
   await user.update({ email: new_email, new_email: null }, { transaction })
 
-  return omit(user?.dataValues, ['old_passwords', 'password'])
+  return omit(user?.dataValues, ['created_at', 'new_email', 'old_passwords', 'password', 'updated_at'])
 }
 
 export const changePasswordByUser = async (params = {}, transaction) => {
@@ -374,21 +377,21 @@ export const changePasswordByUser = async (params = {}, transaction) => {
 
   await authTokenService.deleteAuthTokens({ where: { user_id } }, transaction)
 
-  return omit(user?.dataValues, ['old_passwords', 'password'])
+  return omit(user?.dataValues, ['created_at', 'new_email', 'old_passwords', 'password', 'updated_at'])
 }
 
 export const changePasswordByAdmin = async (params = {}, transaction) => {
   commonHelper.validateProps(
     [
-      { field: 'email', required: true, type: 'string' },
-      { field: 'password', required: true, type: 'string' }
+      { field: 'password', required: true, type: 'string' },
+      { field: 'user_id', required: true, type: 'string' }
     ],
     params
   )
 
-  const { email, password } = params || {}
+  const { password, user_id } = params || {}
 
-  const user = await userHelper.getAUser({ where: { email } }, transaction)
+  const user = await userHelper.getAUser({ where: { id: user_id } }, transaction)
   if (!user?.id) {
     throw new Error('USER_DOES_NOT_EXIST')
   }
@@ -400,9 +403,9 @@ export const changePasswordByAdmin = async (params = {}, transaction) => {
     { transaction }
   )
 
-  await authTokenService.deleteAuthTokens({ where: { user_id: user?.id } }, transaction)
+  await authTokenService.deleteAuthTokens({ where: { user_id } }, transaction)
 
-  return omit(user?.dataValues, ['old_passwords', 'password'])
+  return omit(user?.dataValues, ['created_at', 'new_email', 'old_passwords', 'password', 'updated_at'])
 }
 
 export const forgotPassword = async (params = {}, transaction) => {
@@ -442,7 +445,7 @@ export const forgotPassword = async (params = {}, transaction) => {
     transaction
   )
 
-  return omit(user?.dataValues, ['old_passwords', 'password'])
+  return omit(user?.dataValues, ['created_at', 'new_email', 'old_passwords', 'password', 'updated_at'])
 }
 
 export const retryForgotPassword = async (params = {}, transaction) => {
@@ -482,7 +485,7 @@ export const retryForgotPassword = async (params = {}, transaction) => {
     transaction
   )
 
-  return omit(user?.dataValues, ['old_passwords', 'password'])
+  return omit(user?.dataValues, ['created_at', 'new_email', 'old_passwords', 'password', 'updated_at'])
 }
 
 export const verifyForgotPasswordCode = async (params = {}, transaction) => {
@@ -550,21 +553,21 @@ export const verifyForgotPassword = async (params = {}, transaction) => {
 
   await authTokenService.deleteAuthTokens({ where: { user_id: user?.id } }, transaction)
 
-  return omit(user?.dataValues, ['old_passwords', 'password'])
+  return omit(user?.dataValues, ['created_at', 'new_email', 'old_passwords', 'password', 'updated_at'])
 }
 
 export const verifyUserPassword = async (params = {}, transaction) => {
   commonHelper.validateProps(
     [
-      { field: 'email', required: true, type: 'string' },
-      { field: 'password', required: true, type: 'string' }
+      { field: 'password', required: true, type: 'string' },
+      { field: 'user_id', required: true, type: 'string' }
     ],
     params
   )
 
-  const { email, password } = params || {}
+  const { password, user_id } = params || {}
 
-  const user = await userHelper.getAUser({ where: { email } }, transaction)
+  const user = await userHelper.getAUser({ where: { id: user_id } }, transaction)
   if (!user?.id) {
     throw new Error('USER_IS_NOT_FOUND')
   }
