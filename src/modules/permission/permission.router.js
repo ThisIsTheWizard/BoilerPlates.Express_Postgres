@@ -117,6 +117,49 @@ permissionRouter.delete('/:entity_id', authorizer(), permissionController.delete
  *     summary: Get all permissions
  *     security:
  *       - tokenAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: sort_by
+ *         schema:
+ *           type: string
+ *           enum: [action, module, created_at, updated_at]
+ *       - in: query
+ *         name: sort_order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *       - in: query
+ *         name: action
+ *         schema:
+ *           type: string
+ *           enum: [create, read, update, delete]
+ *       - in: query
+ *         name: module
+ *         schema:
+ *           type: string
+ *           enum: [permission, role, role_permission, role_user, user]
+ *       - in: query
+ *         name: exclude_entity_ids
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *             format: uuid
+ *       - in: query
+ *         name: include_entity_ids
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *             format: uuid
  *     responses:
  *       200:
  *         description: SUCCESS

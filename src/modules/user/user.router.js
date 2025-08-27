@@ -214,6 +214,18 @@ userRouter.post('/change-email', authorizer(), userController.changeEmail)
  *     summary: Cancel email change
  *     security:
  *       - tokenAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *             required:
+ *               - email
  *     responses:
  *       200:
  *         description: SUCCESS
@@ -262,15 +274,15 @@ userRouter.post('/verify-change-email', authorizer(), userController.verifyNewEm
  *           schema:
  *             type: object
  *             properties:
+ *               new_email:
+ *                 type: string
+ *                 format: email
  *               user_id:
  *                 type: string
  *                 format: uuid
- *               email:
- *                 type: string
- *                 format: email
  *             required:
+ *               - new_email
  *               - user_id
- *               - email
  *     responses:
  *       200:
  *         description: SUCCESS

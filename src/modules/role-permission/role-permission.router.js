@@ -116,6 +116,53 @@ rolePermissionRouter.delete('/:entity_id', authorizer(), rolePermissionControlle
  *     summary: Get all role permissions
  *     security:
  *       - tokenAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: sort_by
+ *         schema:
+ *           type: string
+ *           enum: [created_at, updated_at]
+ *       - in: query
+ *         name: sort_order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *       - in: query
+ *         name: role_id
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: permission_id
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: can_do_the_action
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: exclude_entity_ids
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *             format: uuid
+ *       - in: query
+ *         name: include_entity_ids
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *             format: uuid
  *     responses:
  *       200:
  *         description: SUCCESS

@@ -27,7 +27,7 @@ permissionController.createAPermission = async (req, res, next) => {
 permissionController.updateAPermission = async (req, res, next) => {
   try {
     const data = await useTransaction(async (transaction) =>
-      permissionService.updateAPermissionForMutation({ ...req.body, ...req.params }, req.user, transaction)
+      permissionService.updateAPermissionForMutation({ entity_id: req.params.entity_id, data: req.body }, transaction)
     )
 
     res.status(200).json({ data, message: 'SUCCESS' })
@@ -39,7 +39,7 @@ permissionController.updateAPermission = async (req, res, next) => {
 permissionController.deleteAPermission = async (req, res, next) => {
   try {
     const data = await useTransaction(async (transaction) =>
-      permissionService.deleteAPermissionForMutation(req.params, req.user, transaction)
+      permissionService.deleteAPermissionForMutation(req.params, transaction)
     )
 
     res.status(200).json({ data, message: 'SUCCESS' })
@@ -52,7 +52,11 @@ permissionController.getPermissions = async (req, res, next) => {
   try {
     const query = parse(req.query)
     const options = commonHelper.getOptionsFromQuery(query)
-    const data = await permissionHelper.getPermissionsForQuery(pick(query, ['entity_id']), options, req.user)
+    const data = await permissionHelper.getPermissionsForQuery(
+      pick(query, ['action', 'exclude_entity_ids', 'include_entity_ids', 'module']),
+      options,
+      req.user
+    )
 
     res.status(200).json({ data, message: 'SUCCESS' })
   } catch (error) {

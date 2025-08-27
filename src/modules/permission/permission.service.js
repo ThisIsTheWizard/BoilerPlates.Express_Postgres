@@ -2,7 +2,7 @@
 import { PermissionEntity } from 'src/modules/entities'
 
 // Helpers
-import {} from 'src/modules/helpers'
+import { commonHelper } from 'src/modules/helpers'
 
 // Utils
 import { CustomError } from 'src/utils/error'
@@ -33,4 +33,43 @@ export const deleteAPermission = async (options, transaction) => {
   await permission.destroy({ transaction })
 
   return permission
+}
+
+export const createAPermissionForMutation = async (params, user, transaction) => {
+  commonHelper.validateProps(
+    [
+      { field: 'action', required: true, type: 'string' },
+      { field: 'module', required: true, type: 'string' }
+    ],
+    params
+  )
+
+  const { action, module } = params || {}
+
+  return createAPermission({ action, created_by: user?.user_id, module }, null, transaction)
+}
+
+export const updateAPermissionForMutation = async (params, transaction) => {
+  commonHelper.validateProps(
+    [
+      { field: 'entity_id', required: true, type: 'string' },
+      { field: 'data', required: true, type: 'object' }
+    ],
+    params
+  )
+  commonHelper.validateProps(
+    [
+      { field: 'action', required: false, type: 'string' },
+      { field: 'module', required: false, type: 'string' }
+    ],
+    params?.data
+  )
+
+  return updateAPermission({ where: { id: params?.entity_id } }, params?.data, transaction)
+}
+
+export const deleteAPermissionForMutation = async (params, transaction) => {
+  commonHelper.validateProps([{ field: 'entity_id', required: true, type: 'string' }], params)
+
+  return deleteAPermission({ where: { id: params?.entity_id } }, transaction)
 }

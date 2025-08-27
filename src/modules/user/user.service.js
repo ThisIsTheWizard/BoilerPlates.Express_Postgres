@@ -316,7 +316,7 @@ export const setUserEmailByAdmin = async (params = {}, transaction) => {
     params
   )
 
-  const { email, new_email } = params || {}
+  const { new_email, user_id } = params || {}
 
   const existingUser = await userHelper.getAUser(
     { where: { [Op.or]: [{ email: new_email }, { new_email }] } },
@@ -326,7 +326,7 @@ export const setUserEmailByAdmin = async (params = {}, transaction) => {
     throw new Error('NEW_EMAIL_IS_ALREADY_ASSOCIATED_WITH_A_USER')
   }
 
-  const user = await userHelper.getAUser({ where: { email } }, transaction)
+  const user = await userHelper.getAUser({ where: { id: user_id } }, transaction)
   if (!user?.id) {
     throw new Error('USER_DOES_NOT_EXIST')
   }
