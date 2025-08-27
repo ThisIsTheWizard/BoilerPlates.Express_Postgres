@@ -21,7 +21,9 @@ services:
       - postgres
 
   node_server:
-    build: .
+    build:
+      context: .
+      dockerfile: ${DOCKERFILE:-Dockerfile}
     container_name: server_container
     ports:
       - '8000:8000'
@@ -29,6 +31,9 @@ services:
       - .env
     depends_on:
       - postgres
+    volumes:
+      - .:/app
+      - /app/node_modules
 
 volumes:
   postgres_data:
