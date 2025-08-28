@@ -34,10 +34,9 @@ services:
     depends_on:
       - postgres
     volumes:
-      - node_server_data:/app
+      - .:/app
       - /app/node_modules
 
 volumes:
-  node_server_data:
   postgres_admin_data:
   postgres_data:
