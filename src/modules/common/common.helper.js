@@ -16,14 +16,12 @@ export const getFirstLetterUpperCase = (str) => {
 }
 
 export const getOptionsFromQuery = (query = {}) => {
-  const options = { limit: 50, skip: 0, sort: {} }
+  const options = { limit: 50, offset: 0, order: [['created_at', 'desc']] }
   if (query?.limit) options.limit = Number(query.limit)
-  if (query?.skip) options.skip = Number(query.skip)
-  if (size(query?.sort)) {
-    map(Object.keys(query.sort), (key) => {
-      options.sort[key] = Number(query?.sort?.[key])
-    })
-  } else options.sort = { created_at: -1 }
+  if (query?.offset) options.offset = Number(query.offset)
+  if (size(query?.order)) {
+    options.order = JSON.parse(query.order)
+  }
 
   return options
 }
