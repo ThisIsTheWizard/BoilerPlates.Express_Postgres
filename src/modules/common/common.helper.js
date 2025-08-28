@@ -7,7 +7,7 @@ import {} from 'src/modules/helpers'
 // Utils
 import { CustomError } from 'src/utils/error'
 
-export const getCommonOptions = () => ({ limit: 50, skip: 0, sort: { created_at: -1 } })
+export const getCommonOptions = () => ({ limit: 50, offset: 0, order: [['created_at', 'desc']] })
 
 export const getFirstLetterUpperCase = (str) => {
   if (!size(str)) return ''
