@@ -19,6 +19,8 @@ services:
       - '4000:80'
     depends_on:
       - postgres
+    volumes:
+      - postgres_admin_data:/var/lib/pgadmin
 
   node_server:
     build:
@@ -32,8 +34,10 @@ services:
     depends_on:
       - postgres
     volumes:
-      - .:/app
+      - node_server_data:/app
       - /app/node_modules
 
 volumes:
+  node_server_data:
+  postgres_admin_data:
   postgres_data:
