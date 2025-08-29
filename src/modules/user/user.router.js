@@ -135,7 +135,7 @@ userRouter.post('/login', userController.loginUser)
  *           schema:
  *             type: object
  *             properties:
- *              access_token:
+ *               access_token:
  *                 type: string
  *               refresh_token:
  *                 type: string

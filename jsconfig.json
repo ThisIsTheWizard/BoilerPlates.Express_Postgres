@@ -3,7 +3,8 @@
     "baseUrl": ".",
     "module": "CommonJS",
     "paths": {
-      "src": ["./src/*"]
+      "src": ["./src/*"],
+      "test": ["./test/*"]
     },
     "target": "ES6"
   },
