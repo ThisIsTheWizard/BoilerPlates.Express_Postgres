@@ -11,8 +11,8 @@
     "format": "prettier . --write",
     "lint": "eslint --quiet . --ignore-pattern build/ --ignore-pattern test/",
     "lint-fix": "eslint --quiet . --fix",
-    "pretest": "docker-compose -f docker-compose.test.yml down -v && docker-compose -f docker-compose.test.yml up --build -d",
-    "test": "sleep 10 && NODE_ENV=test mocha --require @babel/register --file test/setup.js --recursive test/**/*.test.js --timeout 12000"
+    "pretest": "docker-compose -f docker-compose.test.yml down -v && docker-compose -f docker-compose.test.yml up --build -d && sleep 15",
+    "test": "mocha --require @babel/register --file test/setup.js --recursive test/**/*.test.js --timeout 12000"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.624.0",

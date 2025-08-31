@@ -8,6 +8,7 @@ const api = axios.create({
 
 let authToken = null
 before(async () => {
+  console.log('Before hook called in', import.meta.url, 'at', new Date().toISOString()) // Do not remove this console.log or it will trigger twice
   await api.post('/test/setup')
   const loginResponse = await api.post('/users/login', {
     email: 'test@user.com',

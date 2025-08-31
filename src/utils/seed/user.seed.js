@@ -4,8 +4,8 @@ import { RoleUserEntity, UserEntity } from 'src/modules/entities'
 // Services
 import { commonService } from 'src/modules/services'
 
-export const seedTestUser = async (roles) => {
-  await UserEntity.bulkCreate(
+export const seedTestUsers = async (roles) => {
+  const users = await UserEntity.bulkCreate(
     [
       {
         email: 'test@user.com',
@@ -20,7 +20,6 @@ export const seedTestUser = async (roles) => {
   )
 
   const role_users = []
-  const users = await UserEntity.findAll({}) // Have to find users from database as bulk create does not give the old ids
   for (const user of users) {
     for (const role of roles) {
       role_users.push({ role_id: role?.id, user_id: user?.id })
