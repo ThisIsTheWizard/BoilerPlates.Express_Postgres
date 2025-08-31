@@ -43,7 +43,8 @@ export const UserEntity = sequelize.define(
     status: {
       allowNull: false,
       defaultValue: 'unverified',
-      type: DataTypes.ENUM('active', 'inactive', 'invited', 'unverified')
+      type: DataTypes.ENUM,
+      values: ['active', 'inactive', 'invited', 'unverified']
     }
   },
   {

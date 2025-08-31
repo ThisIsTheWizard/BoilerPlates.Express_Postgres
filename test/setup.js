@@ -1,17 +1,19 @@
 import axios from 'axios'
 import { expect } from 'chai'
 
-// Seed
-import { seedAuthTemplates, seedRoles } from 'src/utils/seed'
-
 const api = axios.create({
   baseURL: 'http://localhost:8000',
-  timeout: 5000
+  timeout: 10000
 })
 
+let authToken = null
 before(async () => {
-  await seedAuthTemplates()
-  await seedRoles()
+  await api.post('/test/setup')
+  const loginResponse = await api.post('/users/login', {
+    email: 'test@user.com',
+    password: '123456aA@'
+  })
+  authToken = loginResponse?.data?.data?.access_token
 })
 
-export { api, expect }
+export { api, authToken, expect }

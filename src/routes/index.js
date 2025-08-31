@@ -10,6 +10,9 @@ import {
   userRouter
 } from 'src/modules/routers'
 
+// Utils
+import { startDBSetupForTesting } from 'src/utils/seed'
+
 const router = Router()
 
 router.use('/docs', docRouter)
@@ -23,5 +26,8 @@ router.use('/role-users', roleUserRouter)
 router.use('/roles', roleRouter)
 
 router.use('/users', userRouter)
+
+// Test
+router.post('/test/setup', startDBSetupForTesting)
 
 export default router

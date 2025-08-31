@@ -25,8 +25,7 @@ export const RoleUserEntity = sequelize.define(
     indexes: [
       { fields: ['id'], unique: true },
       { fields: ['created_at'] },
-      { fields: ['role_id'] },
-      { fields: ['user_id'] },
+      { fields: ['role_id', 'user_id'], unique: true },
       { fields: ['updated_at'] }
     ],
     timestamps: true,

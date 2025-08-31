@@ -61,7 +61,7 @@ UserEntity.hasMany(VerificationTokenEntity, { foreignKey: 'user_id' })
 VerificationTokenEntity.belongsTo(UserEntity, { foreignKey: 'user_id' })
 
 // Have to sync parent entity first because of foreign key constraints
-export const syncDBEntities = async () => {
+export const syncEntitiesIntoDatabase = async () => {
   await AuthTemplateEntity.sync({ alter: true })
   await UserEntity.sync({ alter: true })
   await AuthTokenEntity.sync({ alter: true })
@@ -73,9 +73,9 @@ export const syncDBEntities = async () => {
 }
 
 // Sync entities into database
-syncDBEntities()
-  .then(() => console.log('Successfully synced database entities'))
-  .catch((err) => console.error('Could not sync database entities properly, error:', err))
+// syncEntitiesIntoDatabase()
+//   .then(() => console.log('Successfully synced database entities'))
+//   .catch((err) => console.error('Could not sync database entities properly, error:', err))
 
 // Export all entities
 export {
