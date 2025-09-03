@@ -1,5 +1,11 @@
+import { size } from 'lodash'
+import { Op } from 'sequelize'
+
 // Entities
 import { AuthTokenEntity } from 'src/modules/entities'
+
+// Utils
+import { CustomError } from 'src/utils/error'
 
 export const countAuthTokens = async (options) => AuthTokenEntity.count(options)
 
