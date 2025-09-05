@@ -1,7 +1,6 @@
 {
   "recommendations": [
-    "graphql.vscode-graphql",
-    "graphql.vscode-graphql-syntax",
+    "esbenp.prettier-vscode",
     "streetsidesoftware.code-spell-checker"
   ]
 }
