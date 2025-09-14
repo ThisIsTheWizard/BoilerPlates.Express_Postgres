@@ -7,9 +7,10 @@
   "license": "MIT",
   "scripts": {
     "build": "rm -rf ./build && npm run lint && babel src -d build --copy-files",
-    "compose:dev-down": "docker compose -f docker-compose.yml down -v",
-    "compose:dev-up": "docker compose -f docker-compose.yml up --build",
-    "compose:prod-up": "docker compose -f docker-compose.yml up --build",
+    "compose:dev-down": "docker compose -f docker-compose.dev.yml down -v",
+    "compose:dev-up": "docker compose -f docker-compose.dev.yml up --build",
+    "compose:prod-down": "docker compose -f docker-compose.prod.yml down -v",
+    "compose:prod-up": "docker compose -f docker-compose.prod.yml up --build",
     "compose:test-down": "docker compose -f docker-compose.test.yml down -v",
     "compose:test-up": "docker compose -f docker-compose.test.yml up --build",
     "dev": "npm run lint && NODE_ENV=development nodemon -e js -w . --exec babel-node src/server.js",

@@ -12,7 +12,7 @@ services:
   node_server_test:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.Test
     container_name: node_server_test_container
     env_file:
       - .env.test

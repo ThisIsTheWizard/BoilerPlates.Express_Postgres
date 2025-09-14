@@ -25,7 +25,7 @@ services:
   node_server:
     build:
       context: .
-      dockerfile: ${DOCKERFILE:-Dockerfile}
+      dockerfile: Dockerfile.Prod
     container_name: server_container
     ports:
       - '8000:8000'
