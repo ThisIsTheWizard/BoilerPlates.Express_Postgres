@@ -12,6 +12,6 @@ RUN pnpm i
 
 COPY . .
 
-CMD ["npm", "run", "dev"]
+CMD ["pnpm", "run", "dev"]
 
 EXPOSE 8000
