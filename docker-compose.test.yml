@@ -14,12 +14,12 @@ services:
       context: .
       dockerfile: Dockerfile.Test
     container_name: node_server_test_container
+    depends_on:
+      - postgres_test
     env_file:
       - .env.test
     ports:
       - '8000:8000'
-    depends_on:
-      - postgres_test
     healthcheck:
       test:
         [
@@ -30,6 +30,10 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    volumes:
+      - node_server_test_data:/app
+      - /app/node_modules
 
 volumes:
+  node_server_test_data:
   postgres_test_data:
