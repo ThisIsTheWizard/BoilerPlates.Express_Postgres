@@ -8,6 +8,12 @@ services:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
 
   postgres_admin:
     image: dpage/pgadmin4
@@ -26,16 +32,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.Prod
-    container_name: server_container
+    container_name: node_server_container
     ports:
       - '8000:8000'
     env_file:
       - .env
     depends_on:
-      - postgres
-    volumes:
-      - .:/app
-      - /app/node_modules
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_admin_data:
