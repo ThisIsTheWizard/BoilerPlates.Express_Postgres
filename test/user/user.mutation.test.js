@@ -232,7 +232,10 @@ describe('User Mutation Tests', () => {
     let changeEmailHeaders
 
     before(async () => {
-      const tokens = await loginAndGetTokens({ email: context.changeEmail.email, password: context.changeEmail.password })
+      const tokens = await loginAndGetTokens({
+        email: context.changeEmail.email,
+        password: context.changeEmail.password
+      })
       changeEmailHeaders = { headers: { Authorization: tokens.access_token } }
     })
 
@@ -293,7 +296,10 @@ describe('User Mutation Tests', () => {
     let cancelEmail
 
     before(async () => {
-      const tokens = await loginAndGetTokens({ email: context.changeEmail.email, password: context.changeEmail.password })
+      const tokens = await loginAndGetTokens({
+        email: context.changeEmail.email,
+        password: context.changeEmail.password
+      })
       cancelHeaders = { headers: { Authorization: tokens.access_token } }
       cancelEmail = randomEmail('cancel-email')
       await api.post('/users/change-email', { email: cancelEmail }, cancelHeaders)
@@ -414,11 +420,7 @@ describe('User Mutation Tests', () => {
       let error
 
       try {
-        await api.post(
-          '/users/set-user-password',
-          { user_id: context.adminManaged.id },
-          adminHeaders
-        )
+        await api.post('/users/set-user-password', { user_id: context.adminManaged.id }, adminHeaders)
       } catch (err) {
         error = err
       }
@@ -560,6 +562,30 @@ describe('User Mutation Tests', () => {
 
       expect(response.status).to.equal(200)
       expect(response.data.data).to.deep.equal({ message: 'PASSWORD_IS_INCORRECT', success: false })
+    })
+  })
+
+  describe('POST /users/refresh-token', () => {
+    it('refreshes tokens when payload is valid', async () => {
+      const tokens = await loginAndGetTokens({ email: 'test@user.com', password: '123456aA@' })
+      const response = await api.post('/users/refresh-token', tokens)
+
+      expect(response.status).to.equal(200)
+      expect(response.data.data.access_token).to.be.a('string')
+      expect(response.data.data.refresh_token).to.be.a('string')
+    })
+
+    it('returns error when tokens are missing', async () => {
+      let error
+
+      try {
+        await api.post('/users/refresh-token', {})
+      } catch (err) {
+        error = err
+      }
+
+      expect(error?.response?.status).to.equal(500)
+      expect(error?.response?.data?.message).to.equal('MISSING_ACCESS_TOKEN_AND_REFRESH_TOKEN')
     })
   })
 })

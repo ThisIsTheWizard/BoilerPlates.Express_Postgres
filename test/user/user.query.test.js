@@ -36,28 +36,4 @@ describe('User Query Tests', () => {
       expect(error?.response?.data?.message).to.equal('MISSING_TOKEN')
     })
   })
-
-  describe('POST /users/refresh-token', () => {
-    it('refreshes tokens when payload is valid', async () => {
-      const tokens = await loginAndGetTokens({ email: 'test@user.com', password: '123456aA@' })
-      const response = await api.post('/users/refresh-token', tokens)
-
-      expect(response.status).to.equal(200)
-      expect(response.data.data.access_token).to.be.a('string')
-      expect(response.data.data.refresh_token).to.be.a('string')
-    })
-
-    it('returns error when tokens are missing', async () => {
-      let error
-
-      try {
-        await api.post('/users/refresh-token', {})
-      } catch (err) {
-        error = err
-      }
-
-      expect(error?.response?.status).to.equal(500)
-      expect(error?.response?.data?.message).to.equal('MISSING_ACCESS_TOKEN_AND_REFRESH_TOKEN')
-    })
-  })
 })
