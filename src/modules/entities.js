@@ -56,6 +56,8 @@ RolePermissionEntity.belongsTo(UserEntity, { as: 'author', foreignKey: 'created_
 
 UserEntity.hasMany(RoleUserEntity, { foreignKey: 'user_id', onDelete: 'CASCADE' })
 RoleUserEntity.belongsTo(UserEntity, { foreignKey: 'user_id' })
+RoleEntity.hasMany(RoleUserEntity, { foreignKey: 'role_id', onDelete: 'CASCADE' })
+RoleUserEntity.belongsTo(RoleEntity, { foreignKey: 'role_id' })
 
 UserEntity.hasMany(VerificationTokenEntity, { foreignKey: 'user_id' })
 VerificationTokenEntity.belongsTo(UserEntity, { foreignKey: 'user_id' })
