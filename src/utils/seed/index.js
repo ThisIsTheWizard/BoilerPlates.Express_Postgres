@@ -11,6 +11,10 @@ import { verificationTokenHelper } from 'src/modules/helpers'
 
 export const startDBSetupForTesting = async (req, res, next) => {
   try {
+    if (!(process.env.NODE_ENV === 'test')) {
+      return res.status(403).json({ message: 'FORBIDDEN' })
+    }
+
     await syncEntitiesIntoDatabase()
     await seedAuthTemplates()
     const roles = await seedRoles()
@@ -24,6 +28,10 @@ export const startDBSetupForTesting = async (req, res, next) => {
 
 export const getLatestVerificationTokenForTesting = async (req, res, next) => {
   try {
+    if (!(process.env.NODE_ENV === 'test')) {
+      return res.status(403).json({ message: 'FORBIDDEN' })
+    }
+
     const { email, status = 'unverified', type, user_id: userId } = req.query || {}
 
     const where = { status }
