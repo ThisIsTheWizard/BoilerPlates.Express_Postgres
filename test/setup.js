@@ -13,10 +13,15 @@ const loginAndGetTokens = async ({ email, password }) => {
 
 let authToken = null
 before(async () => {
-  await api.post('/test/setup')
+  try {
+    await api.post('/test/setup')
 
-  const tokens = await loginAndGetTokens({ email: 'test@user.com', password: '123456aA@' })
-  authToken = tokens?.access_token
+    const tokens = await loginAndGetTokens({ email: 'test@user.com', password: '123456aA@' })
+    authToken = tokens?.access_token
+  } catch (error) {
+    console.error('Error during test setup:', error)
+    throw error
+  }
 })
 
 export { api, authToken, expect, loginAndGetTokens }
