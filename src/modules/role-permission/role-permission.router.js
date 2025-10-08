@@ -44,7 +44,7 @@ export const rolePermissionRouter = Router()
  *             schema:
  *               $ref: '#/components/schemas/RolePermission'
  */
-rolePermissionRouter.post('/', authorizer(), rolePermissionController.createARolePermission)
+rolePermissionRouter.post('/', authorizer(['admin', 'developer']), rolePermissionController.createARolePermission)
 
 /**
  * @swagger
@@ -79,7 +79,11 @@ rolePermissionRouter.post('/', authorizer(), rolePermissionController.createARol
  *             schema:
  *               $ref: '#/components/schemas/RolePermission'
  */
-rolePermissionRouter.put('/:entity_id', authorizer(), rolePermissionController.updateARolePermission)
+rolePermissionRouter.put(
+  '/:entity_id',
+  authorizer(['admin', 'developer']),
+  rolePermissionController.updateARolePermission
+)
 
 /**
  * @swagger
@@ -105,7 +109,11 @@ rolePermissionRouter.put('/:entity_id', authorizer(), rolePermissionController.u
  *             schema:
  *               $ref: '#/components/schemas/RolePermission'
  */
-rolePermissionRouter.delete('/:entity_id', authorizer(), rolePermissionController.deleteARolePermission)
+rolePermissionRouter.delete(
+  '/:entity_id',
+  authorizer(['admin', 'developer']),
+  rolePermissionController.deleteARolePermission
+)
 
 /**
  * @swagger
@@ -173,7 +181,7 @@ rolePermissionRouter.delete('/:entity_id', authorizer(), rolePermissionControlle
  *               items:
  *                 $ref: '#/components/schemas/RolePermission'
  */
-rolePermissionRouter.get('/', authorizer(), rolePermissionController.getRolePermissions)
+rolePermissionRouter.get('/', authorizer(['admin', 'developer']), rolePermissionController.getRolePermissions)
 
 /**
  * @swagger
@@ -199,4 +207,4 @@ rolePermissionRouter.get('/', authorizer(), rolePermissionController.getRolePerm
  *             schema:
  *               $ref: '#/components/schemas/RolePermission'
  */
-rolePermissionRouter.get('/:entity_id', authorizer(), rolePermissionController.getARolePermission)
+rolePermissionRouter.get('/:entity_id', authorizer(['admin', 'developer']), rolePermissionController.getARolePermission)

@@ -41,7 +41,7 @@ export const permissionRouter = Router()
  *             schema:
  *               $ref: '#/components/schemas/Permission'
  */
-permissionRouter.post('/', authorizer(), permissionController.createAPermission)
+permissionRouter.post('/', authorizer(['admin', 'developer']), permissionController.createAPermission)
 
 /**
  * @swagger
@@ -80,7 +80,7 @@ permissionRouter.post('/', authorizer(), permissionController.createAPermission)
  *             schema:
  *               $ref: '#/components/schemas/Permission'
  */
-permissionRouter.put('/:entity_id', authorizer(), permissionController.updateAPermission)
+permissionRouter.put('/:entity_id', authorizer(['admin', 'developer']), permissionController.updateAPermission)
 
 /**
  * @swagger
@@ -106,7 +106,7 @@ permissionRouter.put('/:entity_id', authorizer(), permissionController.updateAPe
  *             schema:
  *               $ref: '#/components/schemas/Permission'
  */
-permissionRouter.delete('/:entity_id', authorizer(), permissionController.deleteAPermission)
+permissionRouter.delete('/:entity_id', authorizer(['admin', 'developer']), permissionController.deleteAPermission)
 
 /**
  * @swagger
@@ -170,7 +170,7 @@ permissionRouter.delete('/:entity_id', authorizer(), permissionController.delete
  *               items:
  *                 $ref: '#/components/schemas/Permission'
  */
-permissionRouter.get('/', authorizer(), permissionController.getPermissions)
+permissionRouter.get('/', authorizer(['admin', 'developer']), permissionController.getPermissions)
 
 /**
  * @swagger
@@ -196,4 +196,4 @@ permissionRouter.get('/', authorizer(), permissionController.getPermissions)
  *             schema:
  *               $ref: '#/components/schemas/Permission'
  */
-permissionRouter.get('/:entity_id', authorizer(), permissionController.getAPermission)
+permissionRouter.get('/:entity_id', authorizer(['admin', 'developer']), permissionController.getAPermission)

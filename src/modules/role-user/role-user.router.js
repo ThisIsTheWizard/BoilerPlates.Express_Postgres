@@ -41,7 +41,7 @@ export const roleUserRouter = Router()
  *             schema:
  *               $ref: '#/components/schemas/RoleUser'
  */
-roleUserRouter.post('/', authorizer(), roleUserController.createARoleUser)
+roleUserRouter.post('/', authorizer(['admin', 'developer']), roleUserController.createARoleUser)
 
 /**
  * @swagger
@@ -80,7 +80,7 @@ roleUserRouter.post('/', authorizer(), roleUserController.createARoleUser)
  *             schema:
  *               $ref: '#/components/schemas/RoleUser'
  */
-roleUserRouter.put('/:entity_id', authorizer(), roleUserController.updateARoleUser)
+roleUserRouter.put('/:entity_id', authorizer(['admin', 'developer']), roleUserController.updateARoleUser)
 
 /**
  * @swagger
@@ -106,7 +106,7 @@ roleUserRouter.put('/:entity_id', authorizer(), roleUserController.updateARoleUs
  *             schema:
  *               $ref: '#/components/schemas/RoleUser'
  */
-roleUserRouter.delete('/:entity_id', authorizer(), roleUserController.deleteARoleUser)
+roleUserRouter.delete('/:entity_id', authorizer(['admin', 'developer']), roleUserController.deleteARoleUser)
 
 /**
  * @swagger
@@ -156,7 +156,7 @@ roleUserRouter.delete('/:entity_id', authorizer(), roleUserController.deleteARol
  *               items:
  *                 $ref: '#/components/schemas/RoleUser'
  */
-roleUserRouter.get('/', authorizer(), roleUserController.getRoleUsers)
+roleUserRouter.get('/', authorizer(['admin', 'developer']), roleUserController.getRoleUsers)
 
 /**
  * @swagger
@@ -182,4 +182,4 @@ roleUserRouter.get('/', authorizer(), roleUserController.getRoleUsers)
  *             schema:
  *               $ref: '#/components/schemas/RoleUser'
  */
-roleUserRouter.get('/:entity_id', authorizer(), roleUserController.getARoleUser)
+roleUserRouter.get('/:entity_id', authorizer(['admin', 'developer']), roleUserController.getARoleUser)
