@@ -1,5 +1,5 @@
 // Entities
-import { syncEntitiesIntoDatabase } from 'src/modules/entities'
+import { AuthTemplateEntity, RoleEntity, syncEntitiesIntoDatabase, UserEntity } from 'src/modules/entities'
 
 // Seeders
 import { seedAuthTemplates } from 'src/utils/seed/auth-template.seed'
@@ -16,6 +16,12 @@ export const startDBSetupForTesting = async (req, res, next) => {
     }
 
     await syncEntitiesIntoDatabase()
+
+    // Clearing existing data
+    await AuthTemplateEntity.sync({ force: true })
+    await RoleEntity.sync({ force: true })
+    await UserEntity.sync({ force: true })
+
     await seedAuthTemplates()
     const roles = await seedRoles()
     await seedTestUsers(roles)

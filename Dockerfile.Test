@@ -12,6 +12,8 @@ RUN pnpm i
 
 COPY . .
 
+COPY .env.test .env
+
 CMD ["pnpm", "run", "dev"]
 
 EXPOSE 8000
