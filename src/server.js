@@ -52,7 +52,7 @@ const server = http.createServer(app)
 connectToPostgresDB()
   .then(() => {
     server.listen(process.env.PORT || 8000, () => {
-      console.log(`====> Server is started on ${process.env.PORT || 8000} <=====`)
+      console.log(`====> Server is started on http://localhost:${process.env.PORT || 8000} <=====`)
     })
   })
   .catch((err) => {
