@@ -8,17 +8,18 @@
   "scripts": {
     "build": "rm -rf ./build && npm run lint && babel src -d build --copy-files",
     "compose:dev-down": "docker compose -f docker-compose.dev.yml down -v",
-    "compose:dev-up": "docker compose -f docker-compose.dev.yml up -d --build",
+    "compose:dev-up": "docker compose -f docker-compose.dev.yml up --build node_server",
     "compose:prod-down": "docker compose -f docker-compose.prod.yml down -v",
     "compose:prod-up": "docker compose -f docker-compose.prod.yml up -d --build",
     "compose:test-down": "docker compose -f docker-compose.test.yml down -v --remove-orphans",
     "compose:test-up": "docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from test_runner test_runner",
-    "dev": "npm run lint && nodemon -e js -w . --exec babel-node src/server.js",
+    "dev": "pnpm run compose:dev-down && pnpm run compose:dev-up",
     "format": "prettier . --write",
     "lint": "eslint --quiet . --ignore-pattern build/ --ignore-pattern test/",
-    "lint-fix": "eslint --quiet . --fix",
+    "lint-fix": "eslint --quiet . --ignore-pattern build/ --ignore-pattern test/ --fix",
     "mocha": "mocha --require @babel/register --file test/setup.js --recursive test/**/*.test.js --timeout 60000",
-    "test": "pnpm run compose:test-down && pnpm run compose:test-up"
+    "test": "pnpm run compose:test-down && pnpm run compose:test-up",
+    "watch": "nodemon -e js -w . --exec babel-node src/server.js"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.624.0",
