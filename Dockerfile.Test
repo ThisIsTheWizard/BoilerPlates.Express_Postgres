@@ -12,6 +12,8 @@ RUN pnpm i
 
 COPY . .
 
-CMD ["pnpm", "run", "dev"]
+RUN pnpm build
+
+CMD ["sh", "-c", "node build/server"]
 
 EXPOSE 8000
